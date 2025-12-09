@@ -88,7 +88,7 @@
                 <div class="text-center mb-8">
                     <!-- 圖示改為紅色系 -->
                     <div class="bg-red-50 p-4 rounded-full inline-block mb-4 ring-4 ring-red-100"><i data-lucide="sun" class="w-10 h-10 text-red-600"></i></div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V31</span></h1>
+                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統</span></h1>
                 </div>
                 <form id="login-form" class="space-y-5">
                     <div><label class="text-xs font-bold text-stone-500 uppercase ml-1">帳號</label><input type="text" id="login-id" class="w-full p-3 border border-stone-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" placeholder="user"></div>
@@ -245,16 +245,25 @@
                 <h3 class="text-xl font-bold text-stone-800 mb-4 border-b border-stone-200 pb-2 flex items-center"><i data-lucide="file-text" class="w-5 h-5 mr-2 text-red-600"></i> 產出財務報表</h3>
                 <div class="space-y-4">
                     <div><label class="block text-sm font-bold text-stone-600 mb-1">篩選計畫</label><select id="rpt-project" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none"><option value="ALL">全部計畫</option></select></div>
+                    
+                    <!-- 修正區塊：報表期間選擇 -->
                     <div>
-                        <label class="block text-sm font-bold text-stone-600 mb-1">月份 / 期間</label>
-                        <div class="flex items-center space-x-2">
-                            <input type="month" id="rpt-month" class="flex-1 p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none">
-                            <label class="flex items-center space-x-1 text-sm text-stone-600 bg-stone-50 px-2 py-2 rounded border border-stone-200 cursor-pointer hover:bg-stone-100">
-                                <input type="checkbox" id="rpt-full-year" onchange="toggleReportDate()" class="rounded text-red-600 focus:ring-red-500">
-                                <span>列印全年度</span>
-                            </label>
+                        <label class="block text-sm font-bold text-stone-600 mb-1">報表期間模式</label>
+                        <select id="rpt-mode" onchange="updateReportInputs()" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none mb-2">
+                            <option value="month">指定月份</option>
+                            <option value="year">全年度 (1/1 - 12/31)</option>
+                            <option value="academic">全學年 (8/1 - 次年7/31)</option>
+                        </select>
+                        
+                        <div id="rpt-input-month-wrapper">
+                            <input type="month" id="rpt-month-input" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none">
+                        </div>
+                        <div id="rpt-input-year-wrapper" class="hidden">
+                            <input type="number" id="rpt-year-input" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none" placeholder="輸入西元年 (如 2024)">
+                            <p id="rpt-year-hint" class="text-xs text-stone-500 mt-1 font-bold"></p>
                         </div>
                     </div>
+
                     <div><label class="block text-sm font-bold text-stone-600 mb-2">報表類型</label>
                         <div class="space-y-2">
                             <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="journal" checked class="mr-3 text-red-600 focus:ring-red-500">日記帳 (直式)</label>
@@ -300,7 +309,7 @@
     </div>
 
     <script>
-        // V31: 記帳系統簡化版 - 阿美風格
+        // V32: 記帳系統 - 阿美風格 + 學年報表
         let state = { 
             apiUrl: '', 
             transactions: [], 
@@ -411,38 +420,100 @@
             });
         }
 
-        function toggleReportDate() {
-            const isFull = document.getElementById('rpt-full-year').checked;
-            const mInput = document.getElementById('rpt-month');
-            mInput.disabled = isFull;
-            if (isFull) {
-                mInput.classList.add('bg-stone-100', 'text-stone-400');
+        // 新增：更新報表輸入介面
+        function updateReportInputs() {
+            const mode = document.getElementById('rpt-mode').value;
+            const mWrap = document.getElementById('rpt-input-month-wrapper');
+            const yWrap = document.getElementById('rpt-input-year-wrapper');
+            const yHint = document.getElementById('rpt-year-hint');
+            const yInput = document.getElementById('rpt-year-input');
+            
+            if (mode === 'month') {
+                mWrap.classList.remove('hidden');
+                yWrap.classList.add('hidden');
             } else {
-                mInput.classList.remove('bg-stone-100', 'text-stone-400');
+                mWrap.classList.add('hidden');
+                yWrap.classList.remove('hidden');
+                
+                const currentYear = new Date().getFullYear();
+                if(!yInput.value) yInput.value = currentYear;
+
+                if (mode === 'year') {
+                    yHint.innerText = '範圍：1月1日 至 12月31日';
+                } else {
+                    // 全學年
+                    const minguo = (parseInt(yInput.value) || currentYear) - 1911;
+                    yHint.innerText = `範圍：${minguo}學年度 (該年8月1日 至 次年7月31日)`;
+                    
+                    // 綁定輸入事件動態更新民國年提示
+                    yInput.oninput = function() {
+                        const y = parseInt(this.value) || 0;
+                        if(y > 1911) {
+                            yHint.innerText = `範圍：${y-1911}學年度 (該年8月1日 至 次年7月31日)`;
+                        }
+                    };
+                }
             }
         }
 
         function openReportModal() {
             const sel = document.getElementById('rpt-project');
             sel.innerHTML = '<option value="ALL">全部計畫 (All Projects)</option>' + state.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-            document.getElementById('rpt-month').value = new Date().toISOString().slice(0, 7);
             
-            document.getElementById('rpt-full-year').checked = false;
-            toggleReportDate();
+            // 初始化狀態
+            document.getElementById('rpt-mode').value = 'month';
+            document.getElementById('rpt-month-input').value = new Date().toISOString().slice(0, 7);
+            document.getElementById('rpt-year-input').value = new Date().getFullYear();
             
+            updateReportInputs();
             document.getElementById('report-modal').classList.remove('hidden');
         }
 
         function generateReport() {
             const projId = document.getElementById('rpt-project').value;
-            const isFullYear = document.getElementById('rpt-full-year').checked;
-            const monthStr = isFullYear ? '' : document.getElementById('rpt-month').value;
+            const mode = document.getElementById('rpt-mode').value;
             const type = document.querySelector('input[name="rpt-type"]:checked').value;
             
+            let periodText = "";
+            let startDate = "";
+            let endDate = "";
+
+            // 判斷日期範圍
+            if (mode === 'month') {
+                const mVal = document.getElementById('rpt-month-input').value;
+                if(!mVal) return showToast('請選擇月份', 'error');
+                periodText = mVal;
+                // 用字串前綴篩選最快
+                startDate = mVal + "-01"; 
+                // 結束日期不重要，因為我們用 startsWith(YYYY-MM)
+            } else if (mode === 'year') {
+                const yVal = document.getElementById('rpt-year-input').value;
+                if(!yVal) return showToast('請輸入年份', 'error');
+                startDate = `${yVal}-01-01`;
+                endDate = `${yVal}-12-31`;
+                periodText = `${yVal} 全年度`;
+            } else if (mode === 'academic') {
+                const yVal = parseInt(document.getElementById('rpt-year-input').value);
+                if(!yVal) return showToast('請輸入開始年份', 'error');
+                startDate = `${yVal}-08-01`;
+                endDate = `${yVal + 1}-07-31`;
+                const minguo = yVal - 1911;
+                periodText = `${minguo}學年度 (${yVal}/08 - ${yVal+1}/07)`;
+            }
+
             let filtered = state.transactions.filter(t => {
                 const safeDate = (t.date || '').split('T')[0];
-                return ((projId==='ALL') || (String(t.projectId)===String(projId))) && (!monthStr || safeDate.startsWith(monthStr));
+                const matchProject = (projId === 'ALL') || (String(t.projectId) === String(projId));
+                
+                if (!matchProject) return false;
+
+                if (mode === 'month') {
+                    return safeDate.startsWith(document.getElementById('rpt-month-input').value);
+                } else {
+                    return safeDate >= startDate && safeDate <= endDate;
+                }
             });
+            
             filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
 
             const projName = projId === 'ALL' ? '全部計畫' : (state.projects.find(p=>String(p.id)===String(projId))?.name || projId);
@@ -468,7 +539,7 @@
             contentDiv.className = isLandscape ? 'landscape-content bg-white p-4 pdf-content mx-auto' : 'bg-white p-4 pdf-content mx-auto';
             contentDiv.style.width = isLandscape ? '287mm' : '200mm'; 
 
-            let html = `<div class="text-center mb-4"><h1 class="text-2xl font-bold border-b-2 border-black inline-block pb-1">花蓮縣太巴塱國民小學附設幼兒園</h1><h2 class="text-xl font-bold mt-2">${rptName}</h2><p class="text-sm mt-1">範圍：${projName} | 期間：${isFullYear ? '全年度' : monthStr}</p></div>`;
+            let html = `<div class="text-center mb-4"><h1 class="text-2xl font-bold border-b-2 border-black inline-block pb-1">花蓮縣太巴塱國民小學附設幼兒園</h1><h2 class="text-xl font-bold mt-2">${rptName}</h2><p class="text-sm mt-1">範圍：${projName} | 期間：${periodText}</p></div>`;
 
             if (type === 'journal' || type === 'ledger') {
                 html += `
@@ -506,10 +577,10 @@
 
             html += `<table class="sign-table" style="width:100%; border-collapse:collapse; margin-top:30px;">
                 <tr>
-                    <th style="width:25%; border:1px solid #000; padding:5px; text-align:center;">校長</th>
+                    <th style="width:25%; border:1px solid #000; padding:5px; text-align:center;">製表人</th>
                     <th style="width:25%; border:1px solid #000; padding:5px; text-align:center;">園主任</th>
                     <th style="width:25%; border:1px solid #000; padding:5px; text-align:center;">會計</th>
-                    <th style="width:25%; border:1px solid #000; padding:5px; text-align:center;">出納</th>
+                    <th style="width:25%; border:1px solid #000; padding:5px; text-align:center;">校長</th>
                 </tr>
                 <tr>
                     <td style="height:80px; border:1px solid #000;"></td>
