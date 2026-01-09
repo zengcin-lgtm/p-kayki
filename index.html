@@ -88,7 +88,7 @@
                 <div class="text-center mb-8">
                     <!-- 圖示改為紅色系 -->
                     <div class="bg-red-50 p-4 rounded-full inline-block mb-4 ring-4 ring-red-100"><i data-lucide="sun" class="w-10 h-10 text-red-600"></i></div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V32</span></h1>
+                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V33</span></h1>
                 </div>
                 <form id="login-form" class="space-y-5">
                     <div><label class="text-xs font-bold text-stone-500 uppercase ml-1">帳號</label><input type="text" id="login-id" class="w-full p-3 border border-stone-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" placeholder="user"></div>
@@ -309,7 +309,7 @@
     </div>
 
     <script>
-        // V32: 記帳系統 - 阿美風格 + 學年報表
+        // V33: 記帳系統 - 日期時區修正版
         let state = { 
             apiUrl: '', 
             transactions: [], 
@@ -332,6 +332,18 @@
             if (savedUrl) { state.apiUrl = savedUrl; document.getElementById('api-url-input').value = savedUrl; fetchData(false); }
             else { document.getElementById('login-overlay').classList.add('hidden'); switchTab('settings'); }
         };
+
+        // V33 新增：日期安全轉換函式 (解決時區少一天問題)
+        function getSafeDate(val) {
+            if(!val) return '';
+            const d = new Date(val);
+            if(isNaN(d.getTime())) return '';
+            // 直接取用瀏覽器當地的年月日，避免 UTC 時差導致的日期偏移
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
 
         function autoPadAccount(el) {
             let val = el.value.trim();
@@ -502,7 +514,7 @@
             }
 
             let filtered = state.transactions.filter(t => {
-                const safeDate = (t.date || '').split('T')[0];
+                const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate
                 const matchProject = (projId === 'ALL') || (String(t.projectId) === String(projId));
                 
                 if (!matchProject) return false;
@@ -531,7 +543,6 @@
             }
 
             // 修改：累計支出現在只計算「篩選後的資料」(即報表期間內)
-            // 原本是計算 transactions.filter(...) (全時間)
             const totalUsedInPeriod = filtered
                 .filter(t => t.type === 'expense')
                 .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
@@ -562,7 +573,7 @@
                 filtered.forEach(t => {
                     const isInc = t.type === 'income'; const amt = Number(t.amount); if(isInc)sIn+=amt; else sOut+=amt;
                     const pName = state.projects.find(p=>String(p.id)===String(t.projectId))?.name || '';
-                    const safeDate = (t.date || '').split('T')[0];
+                    const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate
                     html += `<tr><td>${safeDate}</td><td>${pName}</td><td>${t.category}</td><td>${t.summary}</td><td class="amount-col">${isInc?amt.toLocaleString():''}</td><td class="amount-col">${!isInc?amt.toLocaleString():''}</td></tr>`;
                 });
                 html += `<tr style="font-weight:bold;background:#fafaf9"><td colspan="4" class="text-right">合計：</td><td class="amount-col">${sIn.toLocaleString()}</td><td class="amount-col">${sOut.toLocaleString()}</td></tr></tbody></table><div class="text-right font-bold mt-2">期間結餘：$${(sIn-sOut).toLocaleString()}</div>`;
@@ -571,7 +582,8 @@
                 for(const cat in groups) {
                     const txs = groups[cat]; const total = txs.reduce((a,c)=>a+Number(c.amount),0);
                     html += `<h3 class="font-bold mt-6 mb-2 border-l-4 border-stone-500 pl-2 bg-stone-100 p-1">${cat}</h3><table class="preview-table"><thead><tr><th>日期</th><th>摘要</th><th>計畫</th><th class="text-right">金額</th></tr></thead><tbody>`;
-                    txs.forEach(t => { const safeDate = (t.date || '').split('T')[0]; html += `<tr><td>${safeDate}</td><td>${t.summary}</td><td>${state.projects.find(p=>String(p.id)===String(t.projectId))?.name||''}</td><td class="amount-col">${Number(t.amount).toLocaleString()}</td></tr>`; });
+                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate 
+                        html += `<tr><td>${safeDate}</td><td>${t.summary}</td><td>${state.projects.find(p=>String(p.id)===String(t.projectId))?.name||''}</td><td class="amount-col">${Number(t.amount).toLocaleString()}</td></tr>`; });
                     html += `<tr style="font-weight:bold"><td colspan="3" class="text-right">小計：</td><td class="amount-col">$${total.toLocaleString()}</td></tr></tbody></table>`;
                 }
             } else {
@@ -737,7 +749,7 @@
             const tbody=document.getElementById('list-body'); 
             tbody.innerHTML=pageItems.map(t=>{ 
                 const projName=state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'(未知)'; 
-                const safeDate=(t.date||'').split('T')[0]; 
+                const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate
                 const canModify = isAdmin || String(t.createdBy) === String(user.id);
                 
                 let payInfo = '';
@@ -795,7 +807,7 @@
             if (!t) return showToast('找不到該筆資料', 'error');
 
             document.getElementById('inp-id').value=t.id;
-            document.getElementById('inp-date').value=(t.date||'').split('T')[0];
+            document.getElementById('inp-date').value = getSafeDate(t.date); // V33: 使用 getSafeDate
             document.getElementById('inp-amount').value=t.amount;
             document.getElementById('inp-summary').value=t.summary;
             document.getElementById('inp-payee').value=t.payee;
