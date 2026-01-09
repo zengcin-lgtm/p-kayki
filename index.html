@@ -88,7 +88,7 @@
                 <div class="text-center mb-8">
                     <!-- 圖示改為紅色系 -->
                     <div class="bg-red-50 p-4 rounded-full inline-block mb-4 ring-4 ring-red-100"><i data-lucide="sun" class="w-10 h-10 text-red-600"></i></div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統</span></h1>
+                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V32</span></h1>
                 </div>
                 <form id="login-form" class="space-y-5">
                     <div><label class="text-xs font-bold text-stone-500 uppercase ml-1">帳號</label><input type="text" id="login-id" class="w-full p-3 border border-stone-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" placeholder="user"></div>
@@ -519,20 +519,24 @@
             const projName = projId === 'ALL' ? '全部計畫' : (state.projects.find(p=>String(p.id)===String(projId))?.name || projId);
             const rptName = type==='journal'?'日記帳':type==='ledger'?'分類帳':'收支月報表';
             
+            // 計算預算資訊 (Budget Calculation)
             let totalBudget = 0;
-            let totalUsedAllTime = 0;
-
+            // Removed global calculation
+            
             if (projId === 'ALL') {
                 totalBudget = state.projects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
-                totalUsedAllTime = state.transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
             } else {
                 const p = state.projects.find(x => String(x.id) === String(projId));
                 totalBudget = Number(p ? p.budget : 0);
-                totalUsedAllTime = state.transactions
-                    .filter(t => String(t.projectId) === String(projId) && t.type === 'expense')
-                    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
             }
-            const remainingBudget = totalBudget - totalUsedAllTime;
+
+            // 修改：累計支出現在只計算「篩選後的資料」(即報表期間內)
+            // 原本是計算 transactions.filter(...) (全時間)
+            const totalUsedInPeriod = filtered
+                .filter(t => t.type === 'expense')
+                .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+            
+            const remainingBudget = totalBudget - totalUsedInPeriod;
             
             const contentDiv = document.getElementById('print-content');
             const isLandscape = type === 'ledger';
@@ -545,7 +549,8 @@
                 html += `
                 <div class="budget-info">
                     <div class="budget-item"><div class="budget-label">總預算</div><div class="budget-value text-stone-700">$${totalBudget.toLocaleString()}</div></div>
-                    <div class="budget-item"><div class="budget-label">累計支出 (至今日)</div><div class="budget-value text-red-600">$${totalUsedAllTime.toLocaleString()}</div></div>
+                    <!-- 修改標籤文字為期間總支出 -->
+                    <div class="budget-item"><div class="budget-label">期間總支出</div><div class="budget-value text-red-600">$${totalUsedInPeriod.toLocaleString()}</div></div>
                     <div class="budget-item"><div class="budget-label">預算餘額</div><div class="budget-value ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}">$${remainingBudget.toLocaleString()}</div></div>
                 </div>`;
             }
