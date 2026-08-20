@@ -88,7 +88,7 @@
                 <div class="text-center mb-8">
                     <!-- 圖示改為紅色系 -->
                     <div class="bg-red-50 p-4 rounded-full inline-block mb-4 ring-4 ring-red-100"><i data-lucide="sun" class="w-10 h-10 text-red-600"></i></div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V33</span></h1>
+                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V34</span></h1>
                 </div>
                 <form id="login-form" class="space-y-5">
                     <div><label class="text-xs font-bold text-stone-500 uppercase ml-1">帳號</label><input type="text" id="login-id" class="w-full p-3 border border-stone-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" placeholder="user"></div>
@@ -182,16 +182,16 @@
                         <input type="hidden" id="inp-type" value="expense"><input type="hidden" id="inp-id" value="">
                         <div class="grid grid-cols-2 gap-4">
                             <input type="date" id="inp-date" required class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-stone-50/50">
-                            <input type="number" id="inp-amount" required placeholder="金額" class="w-full p-3 border border-stone-300 rounded-lg font-mono text-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-stone-50/50">
+                            <input type="number" id="inp-amount" required min="1" max="1000000000000" step="1" placeholder="金額" class="w-full p-3 border border-stone-300 rounded-lg font-mono text-lg focus:border-red-500 focus:ring-1 focus:ring-red-500 bg-stone-50/50">
                         </div>
                         <select id="inp-project" required class="w-full p-3 border border-stone-300 rounded-lg bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500"></select>
                         <select id="inp-category" required class="w-full p-3 border border-stone-300 rounded-lg bg-white focus:border-red-500 focus:ring-1 focus:ring-red-500"></select>
-                        <input type="text" id="inp-summary" required placeholder="摘要" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                        <input type="text" id="inp-summary" required maxlength="200" placeholder="摘要" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500">
                         <div class="grid grid-cols-2 gap-4">
-                            <input type="text" id="inp-payee" placeholder="對象 (受款人)" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                            <input type="text" id="inp-payee" maxlength="100" placeholder="對象 (受款人)" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500">
                             <input type="text" id="inp-bank-account" placeholder="匯款帳號 (14碼)" maxlength="14" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500" onblur="autoPadAccount(this)">
                         </div>
-                        <input type="text" id="inp-note" placeholder="備註" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500">
+                        <input type="text" id="inp-note" maxlength="500" placeholder="備註" class="w-full p-3 border border-stone-300 rounded-lg focus:border-red-500 focus:ring-1 focus:ring-red-500">
                         
                         <div class="flex space-x-3 pt-2">
                             <button type="button" id="btn-cancel-edit" onclick="cancelEdit()" class="hidden w-1/3 bg-stone-200 text-stone-600 font-bold py-4 rounded-xl hover:bg-stone-300">取消</button>
@@ -209,6 +209,19 @@
                 <button onclick="openReportModal()" class="bg-stone-800 text-white px-4 py-2 rounded-lg flex items-center font-bold text-sm hover:bg-black shadow-md transition-colors">
                     <i data-lucide="printer" class="w-4 h-4 mr-2"></i> 下載報表 (PDF)
                 </button>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm mb-4 border border-stone-200">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <input type="date" id="filter-date-from" onchange="applyListFilters()" class="p-2 border border-stone-300 rounded-lg text-sm" title="起始日期">
+                    <input type="date" id="filter-date-to" onchange="applyListFilters()" class="p-2 border border-stone-300 rounded-lg text-sm" title="結束日期">
+                    <select id="filter-project" onchange="applyListFilters()" class="p-2 border border-stone-300 rounded-lg text-sm"><option value="ALL">全部計畫</option></select>
+                    <select id="filter-category" onchange="applyListFilters()" class="p-2 border border-stone-300 rounded-lg text-sm"><option value="ALL">全部科目</option></select>
+                    <input type="search" id="filter-keyword" oninput="applyListFilters()" placeholder="搜尋摘要、受款人、備註" class="p-2 border border-stone-300 rounded-lg text-sm">
+                </div>
+                <div class="flex justify-between items-center mt-3">
+                    <span id="filter-result-count" class="text-xs font-bold text-stone-500">共 0 筆</span>
+                    <button onclick="clearListFilters()" class="text-xs font-bold text-red-700 hover:text-red-900">清除篩選</button>
+                </div>
             </div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-stone-200 min-h-[300px]">
                 <table class="w-full text-sm text-left">
@@ -309,18 +322,24 @@
     </div>
 
     <script>
-        // V33: 記帳系統 - 日期時區修正版
+        // V34: 後端驗證、篩選、超支提示與安全輸出版
         let state = { 
             apiUrl: '', 
+            token: '',
             transactions: [], 
             projects: [], 
             categories: [], 
-            users: [], 
             currentUser: null,
             currentPage: 1,
             itemsPerPage: 15
         };
         let toastTimeout;
+
+        function escapeHtml(value) {
+            return String(value == null ? '' : value).replace(/[&<>'"]/g, ch => ({
+                '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+            })[ch]);
+        }
 
         window.onload = () => {
             lucide.createIcons();
@@ -333,7 +352,7 @@
             else { document.getElementById('login-overlay').classList.add('hidden'); switchTab('settings'); }
         };
 
-        // V33 新增：日期安全轉換函式 (解決時區少一天問題)
+        // V34：日期安全轉換函式（避免時區造成日期偏移）
         function getSafeDate(val) {
             if(!val) return '';
             const d = new Date(val);
@@ -354,6 +373,7 @@
 
         async function apiCall(payload) {
             if (!state.apiUrl) throw new Error("未設定連線網址");
+            if (state.token && payload.action !== 'login' && payload.action !== 'ping') payload.token = state.token;
             
             const res = await fetch(state.apiUrl, {
                 method: 'POST',
@@ -363,22 +383,21 @@
             
             if (!res.ok) throw new Error(`Server Error: ${res.status}`);
             const data = await res.json();
-            if (data.status === 'error') throw new Error(data.message || '操作失敗');
+            if (data.status === 'error') {
+                if (String(data.message || '').includes('登入已失效')) {
+                    state.token = '';
+                    state.currentUser = null;
+                    document.getElementById('login-overlay').classList.remove('hidden');
+                }
+                throw new Error(data.message || '操作失敗');
+            }
             return data;
         }
 
         async function fetchData() {
             showLoading(true);
             try {
-                const res = await fetch(state.apiUrl); 
-                const data = await res.json();
-                if (data.status === 'error') throw new Error(data.message);
-                
-                state.projects = data.projects || []; 
-                state.transactions = data.transactions || [];
-                state.categories = data.categories || []; 
-                state.users = data.users || [];
-                
+                await apiCall({action:'ping'});
                 document.getElementById('login-overlay').classList.remove('hidden'); 
                 showToast('已連線');
             } catch (e) { 
@@ -391,21 +410,30 @@
             }
         }
 
-        document.getElementById('login-form').onsubmit = (e) => {
+        document.getElementById('login-form').onsubmit = async (e) => {
             e.preventDefault();
             const id = document.getElementById('login-id').value.trim(); 
             const pwd = document.getElementById('login-pwd').value.trim();
-            const user = state.users.find(u => String(u.id) === id && String(u.password) === pwd);
-            if (user) {
-                state.currentUser = user; 
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+            try {
+                const data = await apiCall({action:'login', id:id, password:pwd});
+                state.token = data.token;
+                state.currentUser = data.user;
+                state.projects = data.projects || [];
+                state.transactions = data.transactions || [];
+                state.categories = data.categories || [];
                 document.getElementById('login-overlay').classList.add('hidden');
-                updateUI(); switchTab('dashboard'); showToast(`歡迎 ${user.name}`);
-                document.getElementById('user-display').innerText = `${user.name} (${user.role})`;
-                document.getElementById('navbar').classList.replace('bg-stone-700', 'bg-red-700'); // 改為紅色
-            } else { 
-                document.getElementById('login-msg').innerText = "帳號或密碼錯誤"; 
-                document.getElementById('login-msg').classList.remove('hidden'); 
-            }
+                updateFilterOptions();
+                updateUI(); switchTab('dashboard'); showToast(`歡迎 ${data.user.name}`);
+                document.getElementById('user-display').innerText = `${data.user.name} (${data.user.role})`;
+                document.getElementById('navbar').classList.replace('bg-stone-700', 'bg-red-700');
+                document.getElementById('login-msg').classList.add('hidden');
+                document.getElementById('login-pwd').value = '';
+            } catch (err) {
+                document.getElementById('login-msg').innerText = err.message;
+                document.getElementById('login-msg').classList.remove('hidden');
+            } finally { btn.disabled = false; }
         };
 
         // --- PDF Generation Logic ---
@@ -470,7 +498,7 @@
 
         function openReportModal() {
             const sel = document.getElementById('rpt-project');
-            sel.innerHTML = '<option value="ALL">全部計畫 (All Projects)</option>' + state.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+            sel.innerHTML = '<option value="ALL">全部計畫 (All Projects)</option>' + state.projects.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
             
             // 初始化狀態
             document.getElementById('rpt-mode').value = 'month';
@@ -514,7 +542,7 @@
             }
 
             let filtered = state.transactions.filter(t => {
-                const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate
+                const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
                 const matchProject = (projId === 'ALL') || (String(t.projectId) === String(projId));
                 
                 if (!matchProject) return false;
@@ -554,7 +582,7 @@
             contentDiv.className = isLandscape ? 'landscape-content bg-white p-4 pdf-content mx-auto' : 'bg-white p-4 pdf-content mx-auto';
             contentDiv.style.width = isLandscape ? '287mm' : '200mm'; 
 
-            let html = `<div class="text-center mb-4"><h1 class="text-2xl font-bold border-b-2 border-black inline-block pb-1">花蓮縣太巴塱國民小學附設幼兒園</h1><h2 class="text-xl font-bold mt-2">${rptName}</h2><p class="text-sm mt-1">範圍：${projName} | 期間：${periodText}</p></div>`;
+            let html = `<div class="text-center mb-4"><h1 class="text-2xl font-bold border-b-2 border-black inline-block pb-1">花蓮縣太巴塱國民小學附設幼兒園</h1><h2 class="text-xl font-bold mt-2">${escapeHtml(rptName)}</h2><p class="text-sm mt-1">範圍：${escapeHtml(projName)} | 期間：${escapeHtml(periodText)}</p></div>`;
 
             if (type === 'journal' || type === 'ledger') {
                 html += `
@@ -573,23 +601,23 @@
                 filtered.forEach(t => {
                     const isInc = t.type === 'income'; const amt = Number(t.amount); if(isInc)sIn+=amt; else sOut+=amt;
                     const pName = state.projects.find(p=>String(p.id)===String(t.projectId))?.name || '';
-                    const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate
-                    html += `<tr><td>${safeDate}</td><td>${pName}</td><td>${t.category}</td><td>${t.summary}</td><td class="amount-col">${isInc?amt.toLocaleString():''}</td><td class="amount-col">${!isInc?amt.toLocaleString():''}</td></tr>`;
+                    const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                    html += `<tr><td>${escapeHtml(safeDate)}</td><td>${escapeHtml(pName)}</td><td>${escapeHtml(t.category)}</td><td>${escapeHtml(t.summary)}</td><td class="amount-col">${isInc?amt.toLocaleString():''}</td><td class="amount-col">${!isInc?amt.toLocaleString():''}</td></tr>`;
                 });
                 html += `<tr style="font-weight:bold;background:#fafaf9"><td colspan="4" class="text-right">合計：</td><td class="amount-col">${sIn.toLocaleString()}</td><td class="amount-col">${sOut.toLocaleString()}</td></tr></tbody></table><div class="text-right font-bold mt-2">期間結餘：$${(sIn-sOut).toLocaleString()}</div>`;
             } else if (type === 'ledger') {
                 const groups = {}; filtered.forEach(t => { if(!groups[t.category]) groups[t.category]=[]; groups[t.category].push(t); });
                 for(const cat in groups) {
                     const txs = groups[cat]; const total = txs.reduce((a,c)=>a+Number(c.amount),0);
-                    html += `<h3 class="font-bold mt-6 mb-2 border-l-4 border-stone-500 pl-2 bg-stone-100 p-1">${cat}</h3><table class="preview-table"><thead><tr><th>日期</th><th>摘要</th><th>計畫</th><th class="text-right">金額</th></tr></thead><tbody>`;
-                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate 
-                        html += `<tr><td>${safeDate}</td><td>${t.summary}</td><td>${state.projects.find(p=>String(p.id)===String(t.projectId))?.name||''}</td><td class="amount-col">${Number(t.amount).toLocaleString()}</td></tr>`; });
+                    html += `<h3 class="font-bold mt-6 mb-2 border-l-4 border-stone-500 pl-2 bg-stone-100 p-1">${escapeHtml(cat)}</h3><table class="preview-table"><thead><tr><th>日期</th><th>摘要</th><th>計畫</th><th class="text-right">金額</th></tr></thead><tbody>`;
+                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                        html += `<tr><td>${escapeHtml(safeDate)}</td><td>${escapeHtml(t.summary)}</td><td>${escapeHtml(state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'')}</td><td class="amount-col">${Number(t.amount).toLocaleString()}</td></tr>`; });
                     html += `<tr style="font-weight:bold"><td colspan="3" class="text-right">小計：</td><td class="amount-col">$${total.toLocaleString()}</td></tr></tbody></table>`;
                 }
             } else {
                 const iMap={}, eMap={}; filtered.forEach(t=>{ const a=Number(t.amount); if(t.type==='income') iMap[t.category]=(iMap[t.category]||0)+a; else eMap[t.category]=(eMap[t.category]||0)+a; });
                 const tI = Object.values(iMap).reduce((a,b)=>a+b,0); const tE = Object.values(eMap).reduce((a,b)=>a+b,0);
-                html += `<div style="display:flex;gap:20px;"><div style="flex:1"><table class="preview-table"><thead><tr><th colspan="2" style="text-align:center;background:#dcfce7">收入</th></tr></thead><tbody>${Object.entries(iMap).map(([k,v])=>`<tr><td>${k}</td><td class="amount-col">${v.toLocaleString()}</td></tr>`).join('')}<tr style="font-weight:bold"><td>合計</td><td class="amount-col">${tI.toLocaleString()}</td></tr></tbody></table></div><div style="flex:1"><table class="preview-table"><thead><tr><th colspan="2" style="text-align:center;background:#fee2e2">支出</th></tr></thead><tbody>${Object.entries(eMap).map(([k,v])=>`<tr><td>${k}</td><td class="amount-col">${v.toLocaleString()}</td></tr>`).join('')}<tr style="font-weight:bold"><td>合計</td><td class="amount-col">${tE.toLocaleString()}</td></tr></tbody></table></div></div><div class="text-center font-bold text-xl mt-4 border p-4 bg-stone-50">本期結餘：$${(tI-tE).toLocaleString()}</div>`;
+                html += `<div style="display:flex;gap:20px;"><div style="flex:1"><table class="preview-table"><thead><tr><th colspan="2" style="text-align:center;background:#dcfce7">收入</th></tr></thead><tbody>${Object.entries(iMap).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td class="amount-col">${v.toLocaleString()}</td></tr>`).join('')}<tr style="font-weight:bold"><td>合計</td><td class="amount-col">${tI.toLocaleString()}</td></tr></tbody></table></div><div style="flex:1"><table class="preview-table"><thead><tr><th colspan="2" style="text-align:center;background:#fee2e2">支出</th></tr></thead><tbody>${Object.entries(eMap).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td class="amount-col">${v.toLocaleString()}</td></tr>`).join('')}<tr style="font-weight:bold"><td>合計</td><td class="amount-col">${tE.toLocaleString()}</td></tr></tbody></table></div></div><div class="text-center font-bold text-xl mt-4 border p-4 bg-stone-50">本期結餘：$${(tI-tE).toLocaleString()}</div>`;
             }
 
             html += `<table class="sign-table" style="width:100%; border-collapse:collapse; margin-top:30px;">
@@ -639,9 +667,24 @@
                 payee:document.getElementById('inp-payee').value, 
                 bankAccount: rawBankAcc, 
                 note:document.getElementById('inp-note').value, 
-                createdBy:state.currentUser.id,
-                role: state.currentUser.role 
+                createdBy:state.currentUser.id
             }; 
+
+            if (formData.type === 'expense') {
+                const project = state.projects.find(p => String(p.id) === String(formData.projectId));
+                const budget = Number(project?.budget) || 0;
+                const editingRecord = isEdit ? state.transactions.find(t => String(t.id) === String(formData.id)) : null;
+                const currentUsed = state.transactions
+                    .filter(t => String(t.projectId) === String(formData.projectId) && t.type === 'expense' && (!editingRecord || String(t.id) !== String(editingRecord.id)))
+                    .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+                const projectedUsed = currentUsed + Number(formData.amount);
+                if (project && (budget <= 0 || projectedUsed > budget)) {
+                    const warning = budget <= 0
+                        ? `「${project.name}」尚未設定預算，仍要儲存這筆支出嗎？`
+                        : `儲存後「${project.name}」將超支 $${(projectedUsed-budget).toLocaleString()}，仍要繼續嗎？`;
+                    if (!confirm(warning)) { btn.disabled=false; return; }
+                }
+            }
             
             try { 
                 showLoading(true);
@@ -676,7 +719,7 @@
             updateUI();
             try {
                 showLoading(true);
-                await apiCall({action:'delete', id:id, role: state.currentUser.role});
+                await apiCall({action:'delete', id:id});
                 showToast('刪除成功');
             } catch(err) {
                 state.transactions = originalList;
@@ -688,8 +731,41 @@
         }
 
         // 分頁功能
+        function updateFilterOptions() {
+            const project = document.getElementById('filter-project');
+            const category = document.getElementById('filter-category');
+            project.innerHTML = '<option value="ALL">全部計畫</option>' + state.projects.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+            const names = [...new Set(state.categories.map(c => String(c.name || '')).filter(Boolean))].sort();
+            category.innerHTML = '<option value="ALL">全部科目</option>' + names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+        }
+
+        function getFilteredTransactions() {
+            const from = document.getElementById('filter-date-from')?.value || '';
+            const to = document.getElementById('filter-date-to')?.value || '';
+            const project = document.getElementById('filter-project')?.value || 'ALL';
+            const category = document.getElementById('filter-category')?.value || 'ALL';
+            const keyword = (document.getElementById('filter-keyword')?.value || '').trim().toLowerCase();
+            return state.transactions.filter(t => {
+                const date = getSafeDate(t.date);
+                const text = [t.summary, t.payee, t.note].map(v => String(v || '').toLowerCase()).join(' ');
+                return (!from || date >= from) && (!to || date <= to)
+                    && (project === 'ALL' || String(t.projectId) === project)
+                    && (category === 'ALL' || String(t.category) === category)
+                    && (!keyword || text.includes(keyword));
+            });
+        }
+
+        function applyListFilters() { state.currentPage = 1; updateUI(); }
+
+        function clearListFilters() {
+            ['filter-date-from','filter-date-to','filter-keyword'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('filter-project').value = 'ALL';
+            document.getElementById('filter-category').value = 'ALL';
+            applyListFilters();
+        }
+
         function nextPage() {
-            const totalPages = Math.ceil(state.transactions.length / state.itemsPerPage);
+            const totalPages = Math.ceil(getFilteredTransactions().length / state.itemsPerPage);
             if (state.currentPage < totalPages) {
                 state.currentPage++;
                 updateUI();
@@ -720,19 +796,41 @@
             pList.innerHTML=''; 
             
             state.projects.forEach(p=>{ 
-                const used=state.transactions.filter(t=>String(t.projectId)===String(p.id)&&t.type==='expense').reduce((a,c)=>a+(+c.amount||0),0); 
-                const pct=Math.min(Math.round(used/(p.budget||1)*100)||0,100); 
-                pStats.innerHTML+=`<div class="mb-3"><div class="flex justify-between text-sm mb-1"><span class="font-bold text-stone-700">${p.name}</span><span class="text-stone-500">$${used.toLocaleString()} / ${(p.budget||0).toLocaleString()}</span></div><div class="bg-stone-200 rounded-full h-2"><div class="h-2 rounded-full ${pct>90?'bg-red-600':pct>70?'bg-yellow-400':'bg-green-500'}" style="width:${pct}%"></div></div></div>`; 
-                pList.innerHTML+=`<div class="border border-stone-200 rounded-lg p-3 flex justify-between items-center bg-stone-50/50"><div><div class="font-bold text-stone-800">${p.name}</div><div class="text-xs text-stone-500">${p.funder||''}</div></div><div class="text-right"><div class="font-mono font-bold text-red-700">$${(p.budget||0).toLocaleString()}</div></div></div>`; 
+                const budget = Number(p.budget) || 0;
+                const used=state.transactions.filter(t=>String(t.projectId)===String(p.id)&&t.type==='expense').reduce((a,c)=>a+(+c.amount||0),0);
+                const balance = budget - used;
+                const hasBudget = budget > 0;
+                const actualPct = hasBudget ? Math.round(used / budget * 100) : 0;
+                const barPct = hasBudget ? Math.min(actualPct, 100) : (used > 0 ? 100 : 0);
+                const balanceLabel = balance >= 0 ? '預算餘額' : '超支金額';
+                const balanceAmount = Math.abs(balance);
+                const balanceColor = balance >= 0 ? 'text-green-700' : 'text-red-700';
+                const barColor = !hasBudget && used > 0 ? 'bg-red-700' : actualPct > 100 ? 'bg-red-700' : actualPct > 90 ? 'bg-red-600' : actualPct > 70 ? 'bg-yellow-400' : 'bg-green-500';
+                const usageText = hasBudget ? `使用率 ${actualPct}%` : (used > 0 ? '尚未設定預算' : '使用率 0%');
+
+                pStats.innerHTML+=`<div class="mb-5 rounded-lg border border-stone-200 bg-stone-50/60 p-3">
+                    <div class="flex justify-between gap-3 text-sm mb-2">
+                        <span class="font-bold text-stone-700">${escapeHtml(p.name)}</span>
+                        <span class="text-stone-500 text-right">已支出 $${used.toLocaleString()}／預算 $${budget.toLocaleString()}</span>
+                    </div>
+                    <div class="bg-stone-200 rounded-full h-2.5 overflow-hidden" role="progressbar" aria-label="${escapeHtml(p.name)}預算使用率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${barPct}">
+                        <div class="h-2.5 rounded-full ${barColor}" style="width:${barPct}%"></div>
+                    </div>
+                    <div class="flex justify-between gap-3 mt-2 text-xs">
+                        <span class="font-bold ${actualPct > 100 || (!hasBudget && used > 0) ? 'text-red-700' : 'text-stone-500'}">${usageText}</span>
+                        <span class="font-bold ${balanceColor}">${balanceLabel} $${balanceAmount.toLocaleString()}</span>
+                    </div>
+                </div>`; 
+                pList.innerHTML+=`<div class="border border-stone-200 rounded-lg p-3 flex justify-between items-center bg-stone-50/50"><div><div class="font-bold text-stone-800">${escapeHtml(p.name)}</div><div class="text-xs text-stone-500">${escapeHtml(p.funder||'')}</div></div><div class="text-right"><div class="font-mono font-bold text-red-700">$${(Number(p.budget)||0).toLocaleString()}</div></div></div>`; 
             }); 
             
             const pSelect=document.getElementById('inp-project'); 
             const savedP=pSelect.value; 
-            pSelect.innerHTML=state.projects.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); 
+            pSelect.innerHTML=state.projects.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join(''); 
             if(savedP)pSelect.value=savedP; 
             updateCategories(); 
             
-            const sortedTransactions = state.transactions.sort((a,b) => {
+            const sortedTransactions = getFilteredTransactions().slice().sort((a,b) => {
                 const dA = new Date(a.date).getTime() || 0;
                 const dB = new Date(b.date).getTime() || 0;
                 if (dB !== dA) return dB - dA; 
@@ -745,12 +843,14 @@
             const startIndex = (state.currentPage - 1) * state.itemsPerPage;
             const endIndex = startIndex + state.itemsPerPage;
             const pageItems = sortedTransactions.slice(startIndex, endIndex);
+            document.getElementById('filter-result-count').innerText = `共 ${sortedTransactions.length} 筆`;
 
             const tbody=document.getElementById('list-body'); 
             tbody.innerHTML=pageItems.map(t=>{ 
                 const projName=state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'(未知)'; 
-                const safeDate = getSafeDate(t.date); // V33: 使用 getSafeDate
-                const canModify = isAdmin || String(t.createdBy) === String(user.id);
+                const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                const safeActionId = /^[A-Za-z0-9_-]{1,100}$/.test(String(t.id || '')) ? String(t.id) : '';
+                const canModify = !!safeActionId && (isAdmin || String(t.createdBy) === String(user.id));
                 
                 let payInfo = '';
                 if (t.type === 'expense') {
@@ -758,8 +858,8 @@
                     if(acc.length > 0 && acc.length < 14 && /^\d+$/.test(acc)) acc = acc.padStart(14, '0');
                     if (t.payee || acc) {
                         payInfo = `<div class="text-xs text-stone-400 mt-1 font-mono">
-                            ${t.payee ? `<span class="mr-2"><i data-lucide="user" class="inline w-3 h-3"></i> ${t.payee}</span>` : ''}
-                            ${acc ? `<span><i data-lucide="credit-card" class="inline w-3 h-3"></i> ${acc}</span>` : ''}
+                            ${t.payee ? `<span class="mr-2"><i data-lucide="user" class="inline w-3 h-3"></i> ${escapeHtml(t.payee)}</span>` : ''}
+                            ${acc ? `<span><i data-lucide="credit-card" class="inline w-3 h-3"></i> ${escapeHtml(acc)}</span>` : ''}
                         </div>`;
                     }
                 }
@@ -767,8 +867,8 @@
                 let actionBtns = '';
 
                 if (canModify) {
-                    actionBtns += `<button onclick="startEdit('${t.id}')" class="p-1.5 text-stone-400 hover:text-yellow-600 hover:bg-yellow-50 rounded transition-colors" title="修改"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
-                                   <button onclick="deleteItem('${t.id}')" class="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="刪除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+                    actionBtns += `<button onclick="startEdit('${safeActionId}')" class="p-1.5 text-stone-400 hover:text-yellow-600 hover:bg-yellow-50 rounded transition-colors" title="修改"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                                   <button onclick="deleteItem('${safeActionId}')" class="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="刪除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
                 } else {
                     actionBtns += `<span class="p-1.5 text-stone-200" title="無權限"><i data-lucide="lock" class="w-4 h-4"></i></span>`;
                 }
@@ -776,10 +876,10 @@
                 return `<tr class="hover:bg-stone-50 group border-b border-stone-100 last:border-0">
                     <td class="px-4 py-3 align-top">
                         <div class="flex items-center space-x-2 mb-1">
-                            <span class="font-mono text-stone-500 text-xs">${safeDate} <span class="text-stone-300">#${String(t.id).slice(-6)}</span></span>
+                            <span class="font-mono text-stone-500 text-xs">${escapeHtml(safeDate)} <span class="text-stone-300">#${escapeHtml(String(t.id).slice(-6))}</span></span>
                         </div>
-                        <div class="text-xs text-stone-400 truncate max-w-[100px]">${projName}</div>
-                        <div class="text-sm font-medium text-stone-800">${t.summary}</div>
+                        <div class="text-xs text-stone-400 truncate max-w-[100px]">${escapeHtml(projName)}</div>
+                        <div class="text-sm font-medium text-stone-800">${escapeHtml(t.summary)}</div>
                         ${payInfo}
                     </td>
                     <td class="px-4 py-3 text-right align-top">
@@ -807,7 +907,7 @@
             if (!t) return showToast('找不到該筆資料', 'error');
 
             document.getElementById('inp-id').value=t.id;
-            document.getElementById('inp-date').value = getSafeDate(t.date); // V33: 使用 getSafeDate
+            document.getElementById('inp-date').value = getSafeDate(t.date); // V34：使用安全日期轉換
             document.getElementById('inp-amount').value=t.amount;
             document.getElementById('inp-summary').value=t.summary;
             document.getElementById('inp-payee').value=t.payee;
@@ -845,7 +945,7 @@
             setType('expense');
         }
         
-        function updateCategories(){const type=document.getElementById('inp-type').value;const cSelect=document.getElementById('inp-category');const opts=state.categories.filter(c=>c.type===type);cSelect.innerHTML=opts.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');}
+        function updateCategories(){const type=document.getElementById('inp-type').value;const cSelect=document.getElementById('inp-category');const opts=state.categories.filter(c=>c.type===type);cSelect.innerHTML=opts.map(c=>`<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join('');}
         function setType(t){
             document.getElementById('inp-type').value=t;
             const btnE=document.getElementById('btn-expense');
@@ -876,6 +976,10 @@
         function logout(){
             if(!confirm('確定要登出？\n為了資訊安全，登出後將會清除連線設定。')) return;
             state.currentUser = null;
+            state.token = '';
+            state.transactions = [];
+            state.projects = [];
+            state.categories = [];
             localStorage.removeItem('tafalong_url');
             state.apiUrl = '';
             document.getElementById('login-id').value = '';
