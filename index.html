@@ -91,6 +91,30 @@
         .expense-detail-table .digit-cell { text-align:center; padding-left:0; padding-right:0; }
         .expense-signatures { display:grid; grid-template-columns:repeat(4,1fr); margin-top:7mm; font-size:12pt; text-align:center; }
         .expense-signatures div { min-height:20mm; }
+
+        .purchase-form-wrap { font-family:"DFKai-SB","BiauKai","KaiTi","STKaiti",serif; color:#000; }
+        .purchase-form-page { width:190mm; min-height:277mm; padding:4mm 7mm; box-sizing:border-box; background:#fff; }
+        .purchase-binding { position:relative; height:5mm; margin-bottom:1mm; border-bottom:1px solid #000; text-align:center; letter-spacing:26mm; padding-left:25mm; font-size:11.5pt; line-height:6mm; }
+        .purchase-title { text-align:center; font-size:18pt; font-weight:400; letter-spacing:.08em; margin:0 0 1mm; }
+        .purchase-subtitle { text-align:center; font-size:11.5pt; margin:-1mm 0 .5mm; }
+        .purchase-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:11.5pt; line-height:1.15; }
+        .purchase-table th,.purchase-table td { border:1px solid #000; padding:.7mm; vertical-align:middle; font-weight:400; }
+        .purchase-table th { text-align:center; letter-spacing:.12em; }
+        .purchase-top-table .purchase-main-row { height:7mm; }
+        .purchase-sign-label { height:7mm; text-align:center; font-size:14pt; white-space:nowrap; letter-spacing:0!important; word-break:keep-all; }
+        .purchase-sign-cell { height:11mm; vertical-align:top!important; text-align:center; }
+        .purchase-dash-line { height:25mm; box-sizing:border-box; border-top:1px solid #000; border-bottom:1px solid #000; margin:2mm 0 0; padding-top:1mm; text-align:center; font-size:11.5pt; letter-spacing:8mm; }
+        .purchase-lower-title { text-align:center; font-size:16pt; font-weight:400; letter-spacing:.08em; margin:0; height:9mm; line-height:9mm; border:1px solid #000; border-bottom:0; }
+        .purchase-detail-table { font-size:14pt; }
+        .purchase-item-row td { height:7.5mm; }
+        .purchase-total-row td { height:8mm; }
+        .purchase-purpose-cell { height:21mm; vertical-align:top!important; text-align:right; font-size:11pt; }
+        .purchase-bottom-sign { height:21mm; vertical-align:top!important; }
+        .purchase-bottom-table th:not(:first-child) { font-size:14pt; white-space:nowrap; letter-spacing:0!important; word-break:keep-all; }
+        .purchase-no-wrap { white-space:nowrap; letter-spacing:0!important; word-break:keep-all; }
+        .purchase-work-plan-value { font-size:8pt; }
+        .purchase-purpose-value { font-size:11pt; }
+        .purchase-payment-line { font-size:11.5pt; margin-top:1mm; white-space:nowrap; }
     </style>
 </head>
 <body class="text-stone-800 pb-24 md:pb-10">
@@ -104,7 +128,7 @@
                 <div class="text-center mb-8">
                     <!-- 圖示改為紅色系 -->
                     <div class="bg-red-50 p-4 rounded-full inline-block mb-4 ring-4 ring-red-100"><i data-lucide="sun" class="w-10 h-10 text-red-600"></i></div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V35</span></h1>
+                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V36.4</span></h1>
                 </div>
                 <form id="login-form" class="space-y-5">
                     <div><label class="text-xs font-bold text-stone-500 uppercase ml-1">帳號</label><input type="text" id="login-id" class="w-full p-3 border border-stone-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" placeholder="user"></div>
@@ -320,6 +344,36 @@
         </div>
     </div>
 
+    <!-- 支出品項明細 Modal -->
+    <div id="purchase-item-modal" class="fixed inset-0 bg-stone-900/80 z-[240] hidden flex items-center justify-center p-3 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-5xl rounded-xl shadow-2xl max-h-[94vh] flex flex-col overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-start">
+                <div><h3 class="font-bold text-lg text-stone-800">單據黏存單／請購明細</h3><p class="text-xs text-stone-500 mt-1">品項合計必須等於本筆支出金額；單張最多 10 筆。</p></div>
+                <button type="button" onclick="closePurchaseItemModal()" class="text-stone-400 hover:text-stone-700"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1">
+                <div class="grid md:grid-cols-3 gap-3 bg-stone-50 border rounded-lg p-3 mb-4 text-sm">
+                    <div><span class="text-stone-500">工作計畫</span><div id="purchase-work-plan" class="font-bold mt-1"></div></div>
+                    <div><span class="text-stone-500">用途別</span><div id="purchase-purpose-code" class="font-bold mt-1"></div></div>
+                    <div><span class="text-stone-500">支出金額</span><div id="purchase-target-amount" class="font-bold font-mono mt-1"></div></div>
+                    <div class="md:col-span-3"><span class="text-stone-500">用途說明（自動組合）</span><div id="purchase-purpose-description" class="font-bold mt-1"></div></div>
+                </div>
+                <div class="overflow-x-auto border rounded-lg">
+                    <table class="w-full min-w-[760px] text-sm"><thead class="bg-stone-100"><tr><th class="p-2 w-10">#</th><th class="p-2 text-left">品名（規格）</th><th class="p-2 w-24">單位</th><th class="p-2 w-28">數量</th><th class="p-2 w-32">單價</th><th class="p-2 w-32">總價</th><th class="p-2 w-12"></th></tr></thead><tbody id="purchase-items-body"></tbody></table>
+                </div>
+                <div class="flex flex-wrap justify-between items-center gap-3 mt-3">
+                    <button type="button" onclick="addPurchaseItemRow()" class="px-4 py-2 border border-red-300 text-red-700 rounded-lg font-bold hover:bg-red-50">＋ 新增品項</button>
+                    <div class="font-bold">明細合計：<span id="purchase-items-total" class="font-mono text-xl">$0</span>／支出：<span id="purchase-items-target" class="font-mono">$0</span></div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-3 mt-4">
+                    <div><label class="block text-sm font-bold mb-1">款項處理方式</label><select id="purchase-payment-type" onchange="togglePayerName()" class="w-full p-3 border rounded-lg"><option value="prepaid">款項已由人員先行墊付</option><option value="vendor">逕付具領人或廠商</option><option value="advance">已預借費用</option></select></div>
+                    <div id="purchase-payer-wrap"><label class="block text-sm font-bold mb-1">墊付人</label><input id="purchase-payer-name" maxlength="100" class="w-full p-3 border rounded-lg" placeholder="請輸入墊付人姓名"></div>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-end gap-3"><button type="button" onclick="closePurchaseItemModal()" class="px-6 py-3 border rounded-lg font-bold">返回修改</button><button type="button" id="btn-save-purchase" onclick="confirmPurchaseDetails()" class="px-6 py-3 bg-red-700 text-white rounded-lg font-bold hover:bg-red-800">儲存並產生單據</button></div>
+        </div>
+    </div>
+
     <!-- Print Preview Modal -->
     <div id="print-modal" class="fixed inset-0 bg-stone-900/80 z-[250] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-3xl p-4 rounded-lg shadow-2xl max-h-[90vh] flex flex-col">
@@ -332,7 +386,7 @@
             </div>
             <div class="mt-4 flex justify-end space-x-4">
                 <button onclick="document.getElementById('print-modal').classList.add('hidden')" class="px-6 py-2 border border-stone-300 rounded-lg font-bold text-stone-600 hover:bg-stone-100">關閉</button>
-                <button id="btn-download-excel" onclick="downloadExpenseReportExcel()" class="hidden px-6 py-2 bg-green-700 text-white rounded-lg font-bold flex items-center shadow-lg active:scale-95 transition-transform hover:bg-green-800"><i data-lucide="file-spreadsheet" class="w-5 h-5 mr-2"></i> 儲存 Excel</button>
+                <button id="btn-download-excel" onclick="downloadCurrentExcel()" class="hidden px-6 py-2 bg-green-700 text-white rounded-lg font-bold flex items-center shadow-lg active:scale-95 transition-transform hover:bg-green-800"><i data-lucide="file-spreadsheet" class="w-5 h-5 mr-2"></i> 儲存 Excel</button>
                 <button onclick="downloadCurrentPDF()" class="px-6 py-2 bg-red-700 text-white rounded-lg font-bold flex items-center shadow-lg active:scale-95 transition-transform hover:bg-red-800"><i data-lucide="download" class="w-5 h-5 mr-2"></i> 儲存 PDF</button>
             </div>
         </div>
@@ -350,13 +404,16 @@
     </div>
 
     <script>
-        // V35：新增費用結報明細表 PDF／Excel 匯出
+        // V36.4：核章與計畫欄位標題固定單行顯示
         let state = { 
             apiUrl: '', 
             token: '',
             transactions: [], 
             projects: [], 
-            categories: [], 
+            categories: [],
+            transactionItems: [],
+            pendingRecord: null,
+            purchaseForm: null,
             currentUser: null,
             currentPage: 1,
             itemsPerPage: 15
@@ -380,7 +437,7 @@
             else { document.getElementById('login-overlay').classList.add('hidden'); switchTab('settings'); }
         };
 
-        // V35：日期安全轉換函式（避免時區造成日期偏移）
+        // V36：日期安全轉換函式（避免時區造成日期偏移）
         function getSafeDate(val) {
             if(!val) return '';
             const d = new Date(val);
@@ -451,6 +508,7 @@
                 state.projects = data.projects || [];
                 state.transactions = data.transactions || [];
                 state.categories = data.categories || [];
+                state.transactionItems = data.transactionItems || [];
                 document.getElementById('login-overlay').classList.add('hidden');
                 updateFilterOptions();
                 updateUI(); switchTab('dashboard'); showToast(`歡迎 ${data.user.name}`);
@@ -473,7 +531,9 @@
                 margin:       [5, 5, 5, 5],
                 filename:     state.currentReportType === 'expense-detail'
                     ? `費用結報明細表_${new Date().toISOString().slice(0,10)}.pdf`
-                    : `tafalong_report_${new Date().toISOString().slice(0,10)}.pdf`,
+                    : state.currentReportType === 'purchase-form'
+                        ? `單據黏存單_${state.purchaseForm?.transaction?.id || new Date().toISOString().slice(0,10)}.pdf`
+                        : `tafalong_report_${new Date().toISOString().slice(0,10)}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: isLandscape ? 'landscape' : 'portrait' }
@@ -531,6 +591,11 @@
                     };
                 }
             }
+        }
+
+        function downloadCurrentExcel() {
+            if (state.currentReportType === 'purchase-form') return downloadPurchaseFormExcel();
+            return downloadExpenseReportExcel();
         }
 
         function updateReportTypeInputs() {
@@ -597,7 +662,7 @@
             }
 
             let filtered = state.transactions.filter(t => {
-                const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
+                const safeDate = getSafeDate(t.date); // V36：使用安全日期轉換
                 const matchProject = (projId === 'ALL') || (String(t.projectId) === String(projId));
                 
                 if (!matchProject) return false;
@@ -671,7 +736,7 @@
                 filtered.forEach(t => {
                     const isInc = t.type === 'income'; const amt = Number(t.amount); if(isInc)sIn+=amt; else sOut+=amt;
                     const pName = state.projects.find(p=>String(p.id)===String(t.projectId))?.name || '';
-                    const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
+                    const safeDate = getSafeDate(t.date); // V36：使用安全日期轉換
                     html += `<tr><td>${escapeHtml(safeDate)}</td><td>${escapeHtml(pName)}</td><td>${escapeHtml(t.category)}</td><td>${escapeHtml(t.summary)}</td><td class="amount-col">${isInc?amt.toLocaleString():''}</td><td class="amount-col">${!isInc?amt.toLocaleString():''}</td></tr>`;
                 });
                 html += `<tr style="font-weight:bold;background:#fafaf9"><td colspan="4" class="text-right">合計：</td><td class="amount-col">${sIn.toLocaleString()}</td><td class="amount-col">${sOut.toLocaleString()}</td></tr></tbody></table><div class="text-right font-bold mt-2">期間結餘：$${(sIn-sOut).toLocaleString()}</div>`;
@@ -680,7 +745,7 @@
                 for(const cat in groups) {
                     const txs = groups[cat]; const total = txs.reduce((a,c)=>a+Number(c.amount),0);
                     html += `<h3 class="font-bold mt-6 mb-2 border-l-4 border-stone-500 pl-2 bg-stone-100 p-1">${escapeHtml(cat)}</h3><table class="preview-table"><thead><tr><th>日期</th><th>摘要</th><th>計畫</th><th class="text-right">金額</th></tr></thead><tbody>`;
-                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
+                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V36：使用安全日期轉換
                         html += `<tr><td>${escapeHtml(safeDate)}</td><td>${escapeHtml(t.summary)}</td><td>${escapeHtml(state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'')}</td><td class="amount-col">${Number(t.amount).toLocaleString()}</td></tr>`; });
                     html += `<tr style="font-weight:bold"><td colspan="3" class="text-right">小計：</td><td class="amount-col">$${total.toLocaleString()}</td></tr></tbody></table>`;
                 }
@@ -873,7 +938,7 @@
             
             const isEdit=document.getElementById('inp-id').value!==""; 
             const btn=document.getElementById('btn-submit'); 
-            btn.disabled=true; 
+            btn.disabled=true;
             
             let rawBankAcc = document.getElementById('inp-bank-account').value.trim();
             if(rawBankAcc && rawBankAcc.length > 0 && rawBankAcc.length < 14 && /^\d+$/.test(rawBankAcc)) {
@@ -909,38 +974,240 @@
                         : `儲存後「${project.name}」將超支 $${(projectedUsed-budget).toLocaleString()}，仍要繼續嗎？`;
                     if (!confirm(warning)) { btn.disabled=false; return; }
                 }
+                btn.disabled=false;
+                openPurchaseItemModal(formData);
+                return;
             }
-            
-            try { 
-                showLoading(true);
-                await apiCall(formData);
-                
-                if(isEdit){ 
-                    const idx=state.transactions.findIndex(t=>t.id==formData.id); 
-                    if(idx!==-1){ 
-                        formData.createdBy=state.transactions[idx].createdBy; 
-                        state.transactions[idx]=formData; 
-                    } 
-                } else { 
-                    state.transactions.unshift(formData); 
-                } 
-                
-                updateUI(); 
-                cancelEdit(); 
-                showToast('儲存成功'); 
-            } catch(err){ 
-                showToast('儲存失敗：' + err.message, 'error'); 
-                console.error(err);
-            } finally { 
-                btn.disabled=false; 
-                showLoading(false);
-            } 
+            formData.items=[];
+            formData.paymentType='vendor';
+            formData.payerName='';
+            try { await persistRecord(formData, false); } finally { btn.disabled=false; }
         };
 
+        function buildPurposeDescription(transaction) {
+            const project = state.projects.find(p => String(p.id) === String(transaction.projectId));
+            return [project?.name || '', transaction.category || '', transaction.summary || ''].filter(Boolean).join('－');
+        }
+
+        function openPurchaseItemModal(formData) {
+            state.pendingRecord = formData;
+            const project = state.projects.find(p => String(p.id) === String(formData.projectId));
+            const category = state.categories.find(c => String(c.name) === String(formData.category) && c.type === 'expense');
+            const oldItems = state.transactionItems.filter(item => String(item.transactionId) === String(formData.id)).sort((a,b)=>Number(a.lineNo)-Number(b.lineNo));
+            const oldTransaction = state.transactions.find(t => String(t.id) === String(formData.id));
+            state.pendingPurchaseItems = oldItems.length ? oldItems.map(item => ({itemName:item.itemName,unit:item.unit,quantity:Number(item.quantity),unitPrice:Number(item.unitPrice)}))
+                : [{itemName:formData.summary || '', unit:'式', quantity:1, unitPrice:Number(formData.amount) || 0}];
+            document.getElementById('purchase-work-plan').innerText = project?.workPlan || project?.name || '（請在 Projects 填寫 workPlan）';
+            document.getElementById('purchase-purpose-code').innerText = category?.purposeCode || category?.name || '（請在 Categories 填寫 purposeCode）';
+            document.getElementById('purchase-target-amount').innerText = `$${Number(formData.amount).toLocaleString()}`;
+            document.getElementById('purchase-purpose-description').innerText = buildPurposeDescription(formData);
+            document.getElementById('purchase-items-target').innerText = `$${Number(formData.amount).toLocaleString()}`;
+            document.getElementById('purchase-payment-type').value = oldTransaction?.paymentType || 'prepaid';
+            document.getElementById('purchase-payer-name').value = oldTransaction?.payerName || state.currentUser?.name || '';
+            renderPurchaseItemRows();
+            togglePayerName();
+            document.getElementById('purchase-item-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePurchaseItemModal() {
+            document.getElementById('purchase-item-modal').classList.add('hidden');
+            state.pendingRecord = null;
+        }
+
+        function renderPurchaseItemRows() {
+            const body = document.getElementById('purchase-items-body');
+            body.innerHTML = state.pendingPurchaseItems.map((item,index)=>`<tr class="border-t" data-index="${index}">
+                <td class="p-2 text-center">${index+1}</td>
+                <td class="p-1"><input data-field="itemName" maxlength="150" value="${escapeHtml(item.itemName)}" class="w-full p-2 border rounded" placeholder="品名或規格"></td>
+                <td class="p-1"><input data-field="unit" maxlength="30" value="${escapeHtml(item.unit)}" class="w-full p-2 border rounded text-center" placeholder="式"></td>
+                <td class="p-1"><input data-field="quantity" type="number" min="0.01" step="0.01" value="${Number(item.quantity)}" oninput="updatePurchaseItemTotals()" class="w-full p-2 border rounded text-right"></td>
+                <td class="p-1"><input data-field="unitPrice" type="number" min="0" step="0.01" value="${Number(item.unitPrice)}" oninput="updatePurchaseItemTotals()" class="w-full p-2 border rounded text-right"></td>
+                <td class="p-2 text-right font-mono item-line-total">$0</td>
+                <td class="p-1 text-center"><button type="button" onclick="removePurchaseItemRow(${index})" class="text-red-500 p-2" title="刪除"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+            </tr>`).join('');
+            updatePurchaseItemTotals();
+            lucide.createIcons();
+        }
+
+        function syncPurchaseItemsFromInputs() {
+            return [...document.querySelectorAll('#purchase-items-body tr')].map(row => ({
+                itemName:row.querySelector('[data-field="itemName"]').value.trim(), unit:row.querySelector('[data-field="unit"]').value.trim(),
+                quantity:Number(row.querySelector('[data-field="quantity"]').value), unitPrice:Number(row.querySelector('[data-field="unitPrice"]').value)
+            }));
+        }
+
+        function updatePurchaseItemTotals() {
+            const rows = [...document.querySelectorAll('#purchase-items-body tr')];
+            let total=0;
+            rows.forEach(row=>{ const q=Number(row.querySelector('[data-field="quantity"]').value)||0; const p=Number(row.querySelector('[data-field="unitPrice"]').value)||0; const line=Math.round(q*p*100)/100; total+=line; row.querySelector('.item-line-total').innerText=`$${line.toLocaleString()}`; });
+            const target=Number(state.pendingRecord?.amount)||0;
+            const el=document.getElementById('purchase-items-total');
+            el.innerText=`$${total.toLocaleString()}`;
+            el.className=`font-mono text-xl ${Math.abs(total-target)<0.009?'text-green-700':'text-red-700'}`;
+        }
+
+        function addPurchaseItemRow() {
+            state.pendingPurchaseItems=syncPurchaseItemsFromInputs();
+            if(state.pendingPurchaseItems.length>=10) return showToast('單張最多 10 筆品項','error');
+            state.pendingPurchaseItems.push({itemName:'',unit:'式',quantity:1,unitPrice:0}); renderPurchaseItemRows();
+        }
+
+        function removePurchaseItemRow(index) {
+            state.pendingPurchaseItems=syncPurchaseItemsFromInputs();
+            if(state.pendingPurchaseItems.length<=1) return showToast('至少保留一筆品項','error');
+            state.pendingPurchaseItems.splice(index,1); renderPurchaseItemRows();
+        }
+
+        function togglePayerName() {
+            document.getElementById('purchase-payer-wrap').classList.toggle('hidden', document.getElementById('purchase-payment-type').value !== 'prepaid');
+        }
+
+        async function confirmPurchaseDetails() {
+            const record=state.pendingRecord;
+            if(!record) return;
+            const items=syncPurchaseItemsFromInputs();
+            if(items.some(item=>!item.itemName||!item.unit||!(item.quantity>0)||item.unitPrice<0)) return showToast('請完整填寫每筆品名、單位、數量與單價','error');
+            const total=items.reduce((sum,item)=>sum+Math.round(item.quantity*item.unitPrice*100)/100,0);
+            if(Math.abs(total-Number(record.amount))>0.009) return showToast(`明細合計 $${total.toLocaleString()} 與支出金額不一致`,'error');
+            record.items=items;
+            record.paymentType=document.getElementById('purchase-payment-type').value;
+            record.payerName=document.getElementById('purchase-payer-name').value.trim();
+            if(record.paymentType==='prepaid'&&!record.payerName) return showToast('請輸入墊付人','error');
+            const btn=document.getElementById('btn-save-purchase'); btn.disabled=true;
+            try { if (await persistRecord(record, true)) document.getElementById('purchase-item-modal').classList.add('hidden'); }
+            finally { btn.disabled=false; }
+        }
+
+        async function persistRecord(formData, showPurchaseAfterSave) {
+            const isEdit=formData.action==='edit';
+            try {
+                showLoading(true); await apiCall(formData);
+                const idx=state.transactions.findIndex(t=>String(t.id)===String(formData.id));
+                const localRecord={...formData,createdBy:idx>=0?state.transactions[idx].createdBy:state.currentUser.id}; delete localRecord.items;
+                if(idx>=0) state.transactions[idx]=localRecord; else state.transactions.unshift(localRecord);
+                state.transactionItems=state.transactionItems.filter(item=>String(item.transactionId)!==String(formData.id));
+                (formData.items||[]).forEach((item,index)=>state.transactionItems.push({...item,transactionId:formData.id,lineNo:index+1,total:Math.round(item.quantity*item.unitPrice*100)/100}));
+                updateUI(); cancelEdit(); state.pendingRecord=null; showToast('儲存成功');
+                if(showPurchaseAfterSave) showPurchaseFormPreview(localRecord);
+                return true;
+            } catch(err) { showToast('儲存失敗：'+err.message,'error'); console.error(err); return false; }
+            finally { showLoading(false); }
+        }
+
+        function getPurchaseFormData(transaction) {
+            const project=state.projects.find(p=>String(p.id)===String(transaction.projectId))||{};
+            const category=state.categories.find(c=>String(c.name)===String(transaction.category)&&c.type==='expense')||{};
+            const items=state.transactionItems.filter(item=>String(item.transactionId)===String(transaction.id)).sort((a,b)=>Number(a.lineNo)-Number(b.lineNo));
+            return {transaction,items,projectName:project.name||'',workPlan:project.workPlan||project.name||'',purposeCode:category.purposeCode||category.name||transaction.category||'',purposeDescription:buildPurposeDescription(transaction)};
+        }
+
+        function paymentChoiceText(form) {
+            const type=form.transaction.paymentType||'prepaid', payer=form.transaction.payerName||state.currentUser?.name||'';
+            return `${type==='vendor'?'●':'○'}逕付具領人或廠商　　${type==='prepaid'?'●':'○'}款項已由 ${escapeHtml(payer)} 先行墊付　　${type==='advance'?'●':'○'}已預借費用`;
+        }
+
+        function amountToChinese(value) {
+            const amount=Math.max(0,Math.round(Number(value)||0));
+            if(amount===0) return '新台幣零元整';
+            const digit=['零','壹','貳','參','肆','伍','陸','柒','捌','玖'], units=['','拾','佰','仟'], big=['','萬','億','兆'];
+            let n=amount, groups=[];
+            while(n>0){groups.push(n%10000);n=Math.floor(n/10000);}
+            let out='', pendingZero=false;
+            for(let g=groups.length-1;g>=0;g--){const group=groups[g];if(!group){pendingZero=!!out;continue;}if((pendingZero||group<1000)&&out&&!out.endsWith('零'))out+='零';let part='',innerZero=false;for(let pos=3;pos>=0;pos--){const d=Math.floor(group/Math.pow(10,pos))%10;if(d){if(innerZero&&part)part+='零';part+=digit[d]+units[pos];innerZero=false;}else if(part)innerZero=true;}out+=part+big[g];pendingZero=false;}
+            return `新台幣${out}元整`;
+        }
+
+        function showPurchaseFormPreview(transaction) {
+            if (!transaction) return showToast('找不到該筆資料','error');
+            if(transaction.type!=='expense') return showToast('收入紀錄沒有單據黏存單','error');
+            const form=getPurchaseFormData(transaction);
+            if(!form.items.length) return showToast('這筆舊資料尚未建立品項明細，請先修改並補填','error');
+            state.purchaseForm=form; state.currentReportType='purchase-form';
+            const padded=form.items.concat(Array.from({length:Math.max(0,10-form.items.length)},()=>null));
+            const total=form.items.reduce((sum,item)=>sum+Number(item.total||Number(item.quantity)*Number(item.unitPrice)||0),0);
+            const paymentSubtitle='　　月　　　日付款憑單　　號，支出傳票　　號';
+            const html=`<section class="purchase-form-page">
+                <div class="purchase-binding">裝訂線</div>
+                <h1 class="purchase-title">花蓮縣立太巴塱國民小學　憑證黏貼用紙</h1>
+                <div class="purchase-subtitle">${escapeHtml(paymentSubtitle)}</div>
+                <table class="purchase-table purchase-top-table"><colgroup>${Array.from({length:10},()=>'<col style="width:10%">').join('')}</colgroup><tbody>
+                    <tr><th colspan="2">憑證編號</th><th colspan="4">科　目　名　稱</th><th colspan="2">金　額</th><th colspan="2">用　途　說　明</th></tr>
+                    <tr class="purchase-main-row"><th colspan="2" rowspan="3">第　　號</th><th class="purchase-no-wrap">業務計畫</th><td colspan="3">應付代收款</td><td colspan="2" rowspan="3" style="text-align:center;font-size:11.5pt">$${total.toLocaleString()}</td><td colspan="2" rowspan="3" class="purchase-purpose-value">${escapeHtml(form.purposeDescription)}</td></tr>
+                    <tr class="purchase-main-row"><th class="purchase-no-wrap">工作計畫</th><td colspan="3" class="purchase-work-plan-value">${escapeHtml(form.workPlan)}</td></tr>
+                    <tr class="purchase-main-row"><th>用途別</th><td colspan="3">${escapeHtml(form.purposeCode)}</td></tr>
+                </tbody></table>
+                <table class="purchase-table"><colgroup>${Array.from({length:5},()=>'<col style="width:20%">').join('')}</colgroup><tbody>
+                    <tr><th class="purchase-sign-label">經辦人</th><th class="purchase-sign-label">業務主管</th><th class="purchase-sign-label">財產(物品)登記</th><th class="purchase-sign-label">會計室</th><th class="purchase-sign-label">機關長官</th></tr>
+                    <tr><td class="purchase-sign-cell"></td><td class="purchase-sign-cell" rowspan="3"></td><td class="purchase-sign-cell"></td><td class="purchase-sign-cell" rowspan="3"></td><td class="purchase-sign-cell" rowspan="3"></td></tr>
+                    <tr><th class="purchase-sign-label">驗收(證明)人</th><th class="purchase-sign-label">事務主管</th></tr>
+                    <tr><td class="purchase-sign-cell"></td><td class="purchase-sign-cell"></td></tr>
+                </tbody></table>
+                <div class="purchase-dash-line">憑　證　黏　貼　線</div>
+                <h2 class="purchase-lower-title">花蓮縣立太巴塱國民小學　財物請購申請表</h2>
+                <table class="purchase-table purchase-detail-table"><colgroup><col style="width:8%"><col style="width:48%"><col style="width:8%"><col style="width:9%"><col style="width:13%"><col style="width:14%"></colgroup><tbody>
+                    <tr><th>編號</th><th>品名（規格）</th><th>單位</th><th>數量</th><th>單價</th><th>總價</th></tr>
+                    ${padded.map((item,index)=>item?`<tr class="purchase-item-row"><td style="text-align:center">${String(index+1).padStart(2,'0')}</td><td>${escapeHtml(item.itemName)}</td><td style="text-align:center">${escapeHtml(item.unit)}</td><td style="text-align:right">${Number(item.quantity).toLocaleString()}</td><td style="text-align:right">${Number(item.unitPrice).toLocaleString()}</td><td style="text-align:right">${Number(item.total||Number(item.quantity)*Number(item.unitPrice)).toLocaleString()}</td></tr>`:`<tr class="purchase-item-row"><td></td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+                    <tr class="purchase-total-row"><th>合計</th><td style="text-align:center">$${total.toLocaleString()}</td><td colspan="4" style="text-align:center">${escapeHtml(amountToChinese(total))}</td></tr>
+                </tbody></table>
+                <table class="purchase-table purchase-bottom-table"><colgroup>${Array.from({length:5},()=>'<col style="width:20%">').join('')}</colgroup><tbody>
+                    <tr><th>用　途　說　明</th><th>申請單位</th><th>總務處</th><th>會計室</th><th>機關長官</th></tr>
+                    <tr><td class="purchase-purpose-cell">${escapeHtml(form.purposeDescription)}</td><td class="purchase-bottom-sign"></td><td class="purchase-bottom-sign"></td><td class="purchase-bottom-sign"></td><td class="purchase-bottom-sign"></td></tr>
+                </tbody></table>
+                <div class="purchase-payment-line">${paymentChoiceText(form)}</div>
+            </section>`;
+            const content=document.getElementById('print-content'); content.className='purchase-form-wrap bg-white mx-auto'; content.style.width='196mm'; content.innerHTML=html;
+            document.getElementById('btn-download-excel').classList.remove('hidden'); document.getElementById('print-modal').classList.remove('hidden'); lucide.createIcons();
+        }
+
+        const PURCHASE_FORM_TEMPLATE_BASE64='UEsDBAoAAAAIAG+HFV3vZQPY6QAAALYBAAAPAAAAeGwvd29ya2Jvb2sueG1stdExTsMwFAbgq1hvgoE4bUwSorpdurByA8d5bqzafpHt0hyFkQNwBo6DxC0QBbUMDCxsT//w69P/VpvZO/aIMVkKEhZFCQyDpsGGnYRDNjctbNaruTtS3PdEezZ7F1I3SxhznjrOkx7Rq1TQhGH2zlD0KqeC4o6nKaIa0oiYvePLsqy5VzbAZ98pTeeLBeVRwvvz09vLK7BTdj9IEA2w2NlBwkPVCmPaO6XE0AvdtPBNiX+hkDFW45b0wWPIX5aITmVLIY12SsD47xh2tbz+CWrPoL6q6lroW2FMJRaq+QcQvwzFLz9YfwBQSwMECgAAAAgAb0cVXRQmHjHzDAAAM2wBAA0AAAB4bC9zdHlsZXMueG1s7V3fb+PGEf5XCF1Q5Ir69COyLN/FufYauAgKHIr4CgS4Oxx0EmULEElVohM7TwWKAnlqX/oT6FsQIED7cCgCtPl/em76X5QUJVsyPfaSuzP8hsiTSZm7/L7d2dmZ2dnl+4/Pgqn3qT9fTKLwoNF+0Gp4fjiMRpPw+KBxGo93+o3HH7x/9nARn0/9oxPfj72kRLh4eHbQOInj2cNmczE88YPB4kE088Pkf+NoHgzi5HZ+3FzM5v5gtEiLBdNmp9XqNYPBJGykNYanwWEQL7xhdBrGB429jR+97M9Ho4NGt93wshp/Go38g8arnR969350717r1c6jFxvX6e8/+NVpFD/ayf4sf/vxq52G17y54u71irNy72R/VjU/aGUvov+XK7eF4vHju3C093rbQLaqy+jdf/T8Y3/08sW7+f+9uE9XvLdd8fMPnzw9DTovs9LvXvzpzdvfv3n77ZfZ/fN3drqt7suf+aE/H0yz397+9jcXf/zmfnZDv6d/FwG66P520SArdPG3L7KL0er+z1/dgaHfuo2rMdWNtzQvJTR94zgKr0T1vVZj/dtyaHzufTqYJiA6a3iDwM9+Sl7832/eXPzld//7+x/Wta6LOS6+7/zlX//14qt/mZRtP9i1KN0vX/YGzsav7VqU7VmUfc/pe59NAn/hPfU/8z6OgkFYvMEKVnBDsxWtIS9p9jWYy3nbqaQWRZ5/e8Ea7CG0rGvIS7B9Bx75x5Hv/fIj7+g8eB1NKxGiDw9/PpjsHD0pIQfGRfMj2LhofuQZF71JQZsWtiCbl/abi64usol2Mp1eTrSdxvqn9O9sEMf+PDxMbr3V9bPzWTLZh1HoX9a4evjOQsfzwXm7s7tdbnWxRPI6mo8Su3iNJem6q18zXtl1ejX1x7G3NJEPGvHJysAdRtNo7k3CkX/mJzZKr7t+V/p0+sB8cnxSoNjy8fSJOJqZl0oezrDGcRSYF8ueX12uadoSBgAOAEGq7Zy1AFGRnPg6bEinfeJYMBxXV7Z/QGAAjNRy0I16d5Tc+SNXqsykNkOdMBosToyqctLal5fLKXfoT6dHaW2fjK/ZAGfjDW9/6euHl5fJhL26zKrKbtJSg+nkOAz8ME4jXPFkmJogw+TWn68hnY1ztWeBoaz6Nlm9N5jNpueHUQrx8i559OruyfLpq/ufrMFc/fSLeRT7w3gZeiuCuLndVOum22i1bm+3ZLt5Z2PLBtx4TY94TepDrN+z2ZLta23XBkGR68HrwE6i+eTzpPAmtHJg9ymwzrCWw7VL4epKdmWfQLGvCkQhcVrOKmWlKRXxuwb6NlYXDdS+RW8yvrVbxVupcVHJS80Ho5wIViKBlMpnfSnFtMPSKaPJIp5PXp+mhp9jwDzzogrAqLgsDYzVKmNBtE9Pg9f+/HC5rnaFEsBIkm3v1N0vi5SyFfqSBgvVXKJWEwWiTepkDhT85rU7KSeNt6rVHWnfyfp1DmBI9ibphop6UCQMXttcnW0kMPh0I7a1Qszhwpohwi1uY4e0qYifqCFCohC1ROxRAARwZFsMw3jrUB1XdXBUAJg7rdXpFLUAxLQUFcHjGZh2zUiac7tCYONoZul5GSPl9LxgLUDryZ3VazbWLKVRrLKzb49j5HqP0VjjiMPgWWoUUvMerxwqz5C2QUoOI23Kh3/YZztubp+PcxELx6P+2iT32Xwwe+afZXXZ2BHupmYuhD14hHvwCMvbsVyI2u40IhdE4zhAZQjdOQFs3WzsDbND3NNmbVOAYcOtFGAmO81FgJhKG+HJGrlurxn7qyROHs/aPU53k7gTnOrWXuydXmnEssvKjIB5VAGjTIjGsCgQxgPeiVeGEIuxWtQQDnEUx7rZ2uRqkZrmJhnAtLcJWB5DkEk2cg2rTzZAmtvE3nIXkuC1C8sHJnhxOQxPOAFKLa25i1GwwuRZrXQO02G0gtVNgY0A1GZRgcfo50nxllpdF3ULALDW1/FDAcwjDYyAecwqRsBu7CvOmUFdyI3H5GIEzGN8ccoEjxnGiFidEOuzILFMyO28fSp9VDLmwZS3z9Ps8GDdJsCCrSZSMMEWEymYStYSwTqdDHWBhZBInGAxJDp0CBZEks17cT7aZdKR7UOHPBOlc5xgCwOFt95W3Mtgg0Z2bNtZbbLpbDxYmUZ5qY3DfQMH5FIO1oBgF12hDnZYfSii4BjDcu6MOIBvLDfikB+TWCQQdo/cOdkA7ieRwyzoUALuOZHDzGjUIe5LkQMt6MID7l0RFA5B174waPLsJ7QAD4UTLcBD4UQL8LSpzHW0jqdwonU8uXUBreMpCUULPVM4wRYcSJxgKw6kgKL1O4UTrd8pnGj9TsknWFC3+GHnVc/oYGFdUiDROprCWXVHkzM4WkffGbh1itPFjmky14UnNF46Qae/AVprCNeEA3oI14QDegjXRP6xMurMtuRJNnvx5SE1p625C9XgnZRI59qJbjOv0WnZYBPlBmThM1tZG1lSOMl2g91BRLYbxqDmPzyiOhvcRhdT04ZUCo0DT5tHldhArbr7ga1PJrA4WVQmyggtqFofSwjLZdJtuwmLL9NYQ9zKbm+lSIKl/GRpMSjuE1PIIWWCAgspE/r0LxUoRPzqhfDWSQivGQZxjT1sGMSwp3SQiGGP6Sj+8XEYhLgHdZCQYU/qsP+EGQxi3LM6OiTkUkumh0lVpWjpRu/OTqIZldr9gtIfOfnXBF646Z1tFyQJ5RSo9sFRan3bCSFOFVydDmOdWErlU+DT+p4Vmt6uTm1zdknONa4Fq5z7XAtW1Ukg00RbnfAxEapO7krt9O/B6WwJ10cToc2cUhC9YLtnFkQbsNGQ1QFsNHLx3FpMobKRAzG7up4eq6wIso2kqqJVjmkICxkbj9wKRS3GSnVBOFbFVk99jejIaR1gbHpCdkTxqe2aTD+qFxBVrR+axQVUUcLuI2qPo9I5pnSaPUhkgJdLdSFC91yqczstNh8BKgAONhUujHLQqS4c5X7YVOfUuOdSYeip3vpMe3YEE6Pqojfuxa26mA2DHqiVUkNamFZHR/WIVx2WVQ2eP1G1slCYxrlcdaqP6rSessd1AZq1zk7vQhkVVmE7o2Se6jqLSelW10HFCRn1kCpG2IEvrh5SRMhoDNWMD96EdMsM24cmVOKIzz52F9keeAuo5tgo6YrvASYzu/8kEIgHJEgMbEWzDinQzMTAYrVqc1QFmYGte2hNs5OUxdqOMhxihbwR8guDKs7CMP7Apybwas/C2IVQ047Bq1isosCrGAcYLc8/DHSstPXgYh8uNp1QrHSf/0KxUn7+C0ULLApixQUs8GHFBSzWoVTN2SQ54ak3DjZQgV17OmCRNCsuON6vAzEDi5fVRp8pt9iYCEFpNSeMwMKyVlzAIrF2kqZRS5PetAZnmgKv25mmWKnYjU7Kk2qBUu7xYwxyKVa6D02lWKlIZqfAwyazY4+SUgdp7ENPkO6y8zGmSWcrxYBTj91mAzzZY1p3qq6DLFPZa8EIWyVw9ZAiQthTLA8fvPnVcLMBHiHbzQZ4jKwz8/HUHBslvdFb6tOmOr5KBoJeoj9UZGJS6GVDzrqb3t20b/zZYu2DQ3cgnWKlOyuNHE26o7kkre9Zoelt3QF2ipXur5JRrHR/lQxPApkmWqTD35TLnfXp4xg6W8L10URoKy6KoResNztiaAM2Gsq+SkbR0P1VMozIgZhdXU+PVdlXyTBkjo2Gtq+SUTx0f5UMLwjHqtjqqa8RHTmtA4xNTyj7KhnIEGLjoXoBUdX6oVlcQBUl7D6yyqDEm2PKb8vBiAzwctG4rx1vodRm6zSeAuBgA5VDZE9H4752jIAALxeV+9o16DPt2RFMjDRuA8fwMJn1QK2UGtLCtDo6qke86rCsavD8iao6zkoEmctVp/qoTuspve8Zz6x1t+8ZZFS42yiM11lMSre6DrLchloLRtiBL64eUkTIaAzVjA/ehGS4URiPkO1GYTxG1rtq8dQcGyVd8T3AZGaGb7lgeECCxMBWNOuQAs1MDCxWqzZHVZAZ2LqH1jQ7SVms7SjDIebmrGzU6J4JeBVpkSCnlKuWm/p/D4eTlYrlB4xP4dRmlFifI4v3+Qt36ykY8wn/3F6d+NktD+HJnl0oGLCDLBcfasEIWyVw9ZAiQthTLA8fvPnVcHkIj5Dt8hAeI+u1FDw1x0ZJ1/LQJqM+nHfKRAgp09gJIVVHYG2ZC/sQMmcdtaVoKDteiaKh7Hglioays20oGrJLAWw0tJ1tQ/FQdvQGRUPZ0RukVCkYHYAzIMNKJsacKEhMfU4OxrwpSAxnUV333CrITH1ODsb8KymLOkZZ8mfoT6efjBdpfenlUXw+9RfeMDpN39NpbP3uhYPAP2j859+//u6Lf2wQbN701Hf//Prtt1+un7p87dVLlreL9PLoxPfjD/4PUEsDBAoAAAAIAG+HFV15LyZ2ZAMAAPkPAAATAAAAeGwvdGhlbWUvdGhlbWUxLnhtbOVXS27bMBC9CsF9or9jG1GC2LHRRYoCcYCuaYmS2FCUQDKxc4MueoEue4JuCxS9TVCgtyhEyfpGjvIDCtSLZIZ+M28+JIc+Pt3GFNxiLkjCXGgc6hBg5iU+YaELb2RwMIanJ8doKiMcY8BQjF34IQiIh8H9r8+/v36///Hzz7cvEGxjysQUuTCSMp1qmvAiHCNxmKSYbWMaJDxGUhwmPNR8jjaEhTHVTF0faTEiDJYcC4pjzKTIFjzKV16HWGH9ayP7J+7EnHJwi6gLN4T5yeYKbyUEFAk5p9yFuvpAoJ0ca6UVlT3GNcOl+uwMCwv/2lSGPFyXlsbSnhydVwwKQWUXuFgs5guj8qgQyPMwK8Kpg+3l2JiVXmuoXOx6n+uObrcMagxWx2Aym82cSdNAoXLR7hiM9ZF9ZjYNFCoXnW4Os7P5fNQ0UKhcHHUMlkeTkd0yUKiIEnbdgWedrVpUYoKEvnsQP9Z1fVzuhQqm1XZa7oDJvn0Xo08JXyZMqi4jSRiQdykOkIddOEeUrDkBFySMpOJBU4weAXhiL0BrccaEPRrAHuo9pCVdxaDVi6FKE/dWJiCUruQdxRdCxSYSSvwloVQpyqjsRBrNKd/xNYAhR0oGPJEfiYxWEUqxCw1FEYrCdyhAmggX6rDXubpQCJP5mlPeAmgqkHyf+Pm61bgeSkdKC0WdyspcDKWzjl5KZ+TIgXyG08Pn7OfTajWlhAGU3frGyCzCFB6i2M+qX3jYdefVOyUi5OOiVcbDuRjW0Npl53w438R6Kd+QXtUJ7T5C5zWapXebpXVPJ2VNDWxcOHFMBw47uu2Uevafofen1CBJuZDnSES5mfqqHJSsitB07F2hn3W7DKSxxsZb0mjt8uMgwJ7sWanU4rvkRmK+ivwNWNMbfol8F2Y7SofAJ0K60Nwp3IVZvZTWPKRFcu1hWiSNaBqh4gLJzlKZY45XchmE0mrxaT3BPzMX6xVzaezF/z2Xpl6ksA6X//IUL8r55DFXUeUehtLVb7XaZTd5aRRPHBjFge4Qms7wgZEiGYHsjws9wj1avdmukkvsSVA9kqQLD/IRCrKdmktrFxrFYk6X+XrbN0HViIr4LZ9Toqp4NfpbFX+E8PkVL6RGwRv76YF6a90Dm0363RNdaa3f1LuVk79QSwMECgAAAAgAb4cVXXbm4XfhBAAAuTUAABQAAAB4bC9zaGFyZWRTdHJpbmdzLnhtbO2a3U7jRhTHX2XkK7ggHwvaUkTYi6pIVaWq6nYfIAsGIsUxslMaegW7AhIMG7I4JNnNLgQ21ECSJYGSbGx4gD4G8ozHV7xClQSxIbjIk4YwVPjCsTw+mZ//M3NmzvgMPwtxfjDDCqKPD3gYt8PFADYwxo/7ApMe5rfgRN8g82xkODQkikEQ4vwBcSjkYaaCwekhp1Mcm2I5r+jgp9lAiPNP8ALnDYoOXph0itMC6x0Xp1g2yPmdT1yup07O6wsw9b/y1c71vxsSp71jrIeZFliRFWZYZgTvfBh2hoaCI7Vz48nbn1deET1vlN8RPY8WYzgfMdUoLmmGrBjHKTLzdBgAgBJZXU2i3BlajMGNAqgdOLV5oa0g+TNcqsJXR0ZWubzbBp5RVkgNjT9jxvsCXFs1lCKRobkUMzOrZHXJijkn4/19lHxDZpjLtSFJNg+lFFbCRvyAzHApoqtJXd1B8gnKnZHZyp/73O5+mK/AL8ewuotKEfRXBWpRlIji/Y8onqoXaXDhLUy/xTtpuLzXQOzDc/P1giLMV9CxCqW42z3gcPU73P145QQdHuOSeqGFUaKKElVdTeHSBwc62sbpNPqYxtE0Ks5faBEiWljO6qfpNiRq7xXb6CwwnCWy+u77ftc3g2QVnazjs129Wm2jd+kV1ShkyBxVKWPI2z1GZA+uz/caKRUrSUJX8horYVj4RGa1t2km0ma8DAtk1Zl7CSSf9OB8BCXf9JLKpFclAACUUgDoFRUAUrUAQIsx8PXA+cjVtalGv94vaVfXpK4dLxfxesGo7BgHEvy0D8vHMFOEaQkdxuBhFOYrxO0b2cMHEj7SDPmodpFRCKcmYi8O1+fh2moP3o2iLa2XzHSjoJ+S+XEUr5hLUdJa4OsvZDJUTklNmn0jGd7KAllF1/0u2XsVyCZauBbGSpjQd9b6XRstW9NcSuFUnMjqPCGZc3FdTcKFsrmV1KtVFN6A6haML9YH5HkiinJn5tYCLJcMuQjAKD/unQU/ev/Wgr7GmIULYZxZgdvLupq8tJFguWRurcG5TVxSDVkBwBpKqJ9+rv+If4AZr9/DfOtyMcBZuzPG+3kBCJMvPczoqKt+XJYIo3wg2HgcKSmULZsH8mXRhJfz+WcbZQP1e86rKuysVwVaIZsXybRCXnPf9iDdg12nvC0esAn95J6gW+cXanGtYxNqcVsjImpBreMwenFzuWuUnQH71cexIviJ/R38wnPegAWe2x5e87zUMbpOOPsHMcato3Rqca0jZmpxLYJom6wD3We9GYdTy2od/VPbDRp7DjQ70R46fWhjl4Zm4XopFa5lX4vekXxzN41eVss9PGpxGzuHdvrnAM1ep/vCNfZaaRaul07hHsbiQa9KNLetvXim+7JB6foWy6Ns9npbRX2UrY0FzJ0s7DsjR/f3ZNFirPNcHexDVweV6uF85CGoR6V2ptr0ofFRO8KwX3vUrotfoZ52v4Xtpy7Q+w63J0zY5O6/hx7yQD6jteYBUAvamldCbdO3ZrNQC9qaQ0NtTNya5EIt6H/6dnofuFaZQPTi3sw/uhtv9Zyd5Fnw4gfwfJZ7yfvbJz5P2NrMuYdshH/JyLoD2s4uCe8A8P/f2s35ddS3cPNBp5zN6YjUy/k4YCbaSeS4llxKdyNbzYa1HzE48g9QSwMECgAAAAgAb4cVXdw3LLxjEAAA/WAAABgAAAB4bC93b3Jrc2hlZXRzL3NoZWV0MS54bWylnV1vXMd5x78KsVetAS/PnPczCBWY5L6/v3JXd6y0lIiSokDSlnLXXBRI4gJGkhpGADVAm6JoE7i1XbdVbX+ckuZdvkIxc2ZWO2d/u7Jo3XD3N3OeZ2b2P3PmXT/56cvzs52PFpdXpxfP9kqi7JV2Fs8eXTw+ffZkr/Th9cn7aemnD37yUr64uPzrq6eLxfXOy/OzZ1fy5V7p6fX1c7m7e/Xo6eL8+Kp88Xzx7OX52cnF5fnx9VX54vLJ7tXzy8XxY/3Y+dmu73nx7vnx6bOSMqhpVUfuX+48Xpwcf3h2fXBxdnT6+PrpXiktp0lUsnx48aK+OH3y9HqvJOJyVNrZVSYeXZxdmb8756cq+aWd8+OXe6WotPMiNxOUYz8q7Vxd/+xssVcSfmnn0YdX1xfnxot4Yym3EBsL8dJCmCfkB1tIjAVx/0QImwqRrdh4t2T4nrGhPixtvFMyfFuc6oMx4ZffLRW+NbFaGu9mwhaG+vDCEYexkRRMeGsm7G+iPqCJtWSs20jtbxIHafhOKdl9o1Qt+sPj62P15fLixc6lzvHVXim1j+ZVQmMl96QsIk/9y6IgTsJgmdBlfdC16ZGy9EFualmEiu0DOwB2CKyyZNd7pSvt56MHnsrPR3muljGr8HQNWB1YA1gTWAtYG1iHUi0o1V14ugesD2yQM3+VDYGNgI3B3mQZbyXVPqV6Ck8fAZsBmwN7mLNslX1gpRRYBV9evFjRrJ+HehtEq+rZZpXmD4eOSoEdADsEVgFWBVYDVgfWANYE1gLWBtY1hWUEeX2pi+LkQVdEqmBP8p/67ldf3v32379//Yfv//TxzT//8eZ/vr75xy9vXn18+8Wvb7745Obz1ySF3tLdimgCitmHhA2ADYGNgI2BTYBNgR0BmwGbA3toCtNnXQa5/kRSDnWrmcR+FmRhFGzTY5C7cateSKW4/ybqik4JHhKsEKwSrBGsE2wQbBJsEWwT7BDsEuwR7BMcEBwSHBEcE5wQnBI8IjgjOCf4MFhpItdEFxrRpdtEFmoLceaILEKR5VHT1BFZDhPPEZmJ6RqNyWjlTdQV6RGsEawTbBBsEmwRbGPqE0p9h57vEuwR7OdQtQIrgjTQrfYpuR/S8yOCY4ITglOCRwRnBOcEH4bbZBoZmWblNFP/YpFGgecnW9tG1bfdK2WBU0gZytZEdd/hBkaObHMoPLfoBfYsKzayk9Oqpe4b3njzXLvY96ubuG5XlGCTYMtAtzG1qYp0AvJx7smDAz9ZedGHKeazs/LsisaR9iyNHZVbmjgyz2nk9hEE9iyHJq7jbERwTHBCcErwiOCM4NxAJ6cPo206j++j8zi36LjZN9ApzwMDndb5MGZFY1esEqOiY1R0jIrGzkk9JkUTbBJsxaRomyrnR+kg7SLtxajVGLWa08iBQwOdAh8RHBOcEJwSPCI4Izg30HnJPIy3iTK5jyiT3KLjZj+HwnN6AgeWumP6hGWJ3Y5KgrJMUJYJyhJ7HvWEZEmwSbCVkCwTlCXSLtJegrJMUJY5jZ0SHxroJHZEcExwQnBK8IjgjODcQLfrmmyTZWpk6ZVF+INlmeaF5A7gDXQK+YDgoYFOwVcIVgnWCNYJNgx0fssmwRbBNsEOwS7BHsG+gU5rMiA4JDgiOCY4MdBpOqYEjwjOCM4JPky3yStbtnrvIK8sV7Hb5RQ4Ltg3cd0+J8FDghUDHX1W2T8ODGpktU6wQbBJ/lsGusMigX3udgZDxQ7BLsFeBoPKPubfx07rgHI1JDgiOKb8T9g/duKnZPWI4IzgnPw/zLYpWk15KsEGftlTik7DJBS+8NSwZ8u8vGfeK07x7y+xU6UOGB8yrlis/q6omF3W2EidcYNxk122lrgwRY9GOoy7jHvsss+5HLCRIeMR4zG7nBgcO++aqaVOc3+EdIZ0bmm6QXjiPm2pekrnIXJrEw7/9pexnbwdMD5kXFliJ3vVJS7o0eKCHhE3GDct9gt6tNhdCvJxVNZexnanQhl3GfeW2OlE9znzA87OkPGI8ZgzPzE4dedGLXVnnZDOkM4tDTfI1L9X+5jP6qdOQ7xvaUGNRA+RViwtSJG81dBCHWkDaRO9tdBbGy10kHaR9tBbH70N0MIQ6QjpGL1NDBWioDKLCzJDPGM8X+JNSjNrPXE50iPqzAvjwI9U+1kUWm7WPmem6+OknKklIhH5UZqoCeMt+swnVsNCn4TXiFYir8qW6CHSCtIq0hrSOtIG0ibSFtI20g7SLtIe0j7SAdIh0hHSMdIJ0qmlbmcS6Qzp3KXrijUz8H6s9+FskVs+v+m26PuGuiNsgocEKwSrBGsE6wQbBJsEWwS7BsZurcLZqd4bA6txccapT84GBIcERwTHBCcEp/bXK2zQIDpDOrd0wyK36nBpHW1/p+bzkYUmi4fRJm5YKF0c8x7YyIUXMNEK0irSGtI60gbSJtIW0jbSDtKupe4Ej6GFgbqPA/W+iewOtQdsIsCx9hBNjCx1+7gBDpfHJnJheRLp1Bp2544DHDkc2ciFNzvRuaWbWkkzVe6H5VhvfAtSEcZZsn1PkXpKVZlg236vfRMrTN084YDgwEYujMKJVpBWkdaQ1pE2kDaRtpC2kXaQdg2NHIX1DFXbHFcLDTs/fRvZqUADS5Ntm2uGNpY751l8NsHaMbbRnBxN0OTU0NRbXabVmXt6fLl4XNq5XJzoaHKqRmxXp2on54OBSN4bidWlXJ+Xco+s/UJbT3Tu0vXakN6rNqRubdgw3M9jRYWmA9+/ByZysTYQrSCtIq0hrSNtIG0ibSFtI+0g7driKdSGFGvDho5IirUhdRWNbdXQxirUhsKzvrehOqRYHchmrnFdHdYqgpH+qubZ4ZE1UtA80blL1zWf3Uvzmat5bNT3TSyl+dVedIbiJlpBWkVaQ1pH2kDaRNpC2kbaQdq15VAQt1kQcDq0fUsLKjbUXay3tKBaiju2tKBRsjA19K1NdianqtusdCtUk529N8qXTox8N4g3Q/ESnbt0fWe0dx/xqqdWxcszCyZWQbyGFsSLtIK0irSGtI60gbSJtIW0jbSDtGvLwRWvoQXxWuqK11JXvJa64sW4Y0td8aKFqaGbGlglhLcp1JpwFYp07tJ1hYp7KVS4CuWtqyZWUaECFUq0grSKtIa0jrSBtIm0hbSNtIO0a8uhoFCBChWoUIEKFahQiju2tKBQsjA19EcpVKBCic5duq5Q/14K9V2FYpds38QqKtRHhRKtIK0irSGtI20gbSJtIW0j7SDt2nIoKNRHhfqoUB8V6qNCKe7Y0oJCyUL+Vv+RCvVRoUTnLl1XaHAvhQauQnkyzsQqKjRAhRKtIK0irSGtI20gbSJtIW0j7SDt2nIoKDRAhQao0AAVGqBCKe7Y0oJCycLU0Ld1Uf1ATvUx3FN1jO7BwA/eG+VL0tvFG6B4ic5dui7e8F7iDV3x4uTwvolVFG+I4iVaQVpFWkNaR9pA2kTaQtpG2kHateVQEG+I4g1RvCGKN0TxUtyxpQXxkoWpoZuaV/+HNK8hKpTo3KXrCo3updDIVSgfUzGxigqNUKFEK0irSGtI60gbSJtIW0jbSDtIu7YcCgqNUKERKjRChUaoUIo7trSgULKQt5k/UqERKpTo3KXrCo3vpdC4sEqB6dw30YoSjVGiRCtIq0hrSOtIG0ibSFtI20g7SLu2HAoSjVGiMUo0RonGKFGKO7a0IFGyMDX0rT0AFe1ULc0+GPrxe+N8FXu7cmNULtG5S9eVa9bXAr9wRnqrcM3RAnc1OdjQgTWR3Z0KhgrV9K8cjhtNOn+hVlrmfvyXbz8ld7i04m5uYFxlXFvieC0pB37yA5JRX1pwxNJg3GTcYtxm3GHcZdxj3Gc8YDxkPGI8ZjxhPGV8xHjGeL7EGzbNKv7um2bVU+ti39DfNXELN1cQPURasbSgXExDwKcQ0HAdaQNpExPR2pAIPoqAhjtIu0h7mIg+J2LDeQQ0PEQ6QjrGREw2JIIPJaDhI6QzpHM3EeuyNgtkQbxVxvlChVB/nYtHBqv3jtz+/X+8L0Rw8/nrm//9+uabf7n96pe3//X65rtPbj/75O6Pv7/99Hc66Lubv/3Nzavf3P3h1c2v/u3uX3/x/ad/ev/ub36uA768+fz17dff3nz8qRBh2QvKIrj7u/++/eLru6++/fN3v7j97Jvbz775v29/d/fVP5Rv//Of7l69uv39q7tPXt1++fM/f/dLrlYm7YF7ypHxIePKEjvvx6rFhZMRS1zoByFuMG5aXDgZwS7bbKTDuMu4xy777HLARoaMR4zH7HJicOFkhKWFdp7oDOnc0g2NvPrV314bVCwtBmer8v4Su7t1GR8yriyxeweRxYUjD0vsCo1xg3HT4sKRB3bZZiMdxl3GPXbZZ5cDNjJkPGI8ZpcTgwtnGyx1N50jnSGdW7phZ5pqR7SszBnuLIlFlAp1VcwW3dmLtNyzDUvsHm5gfMi4ssTu+QaDC+cbLHW3VyJtIG1a6vZi0VsbLXSQdpH20FsfvQ3QwhDpCOkYvU1sARfONyxxQWqIZ4znS7xJbWYRTKTvMsOgntI1xr3Myu0tWV+7hQsJzxeXTxYHi7P8rsLlt3zYOgmE1InepUA/k7qdpsBq4EndYFFgK/Bkb1NgP/CkbgTQZ+DJ+abAD/xM6vqBCfIzqV/VmCA/k/qlignyMznenE8hdSXhfAqpNc35FFJLkLOSSD2mpsADP5HVTYE1X42rNwR+4KdSDz64hFKpBwVcQqnUnXUuoVTqTjTLJJXzTYE9P5Z6GocCB34sh5sCR34sJ5sCp36sJhc2mQ2lnlNns6HU0+VsNpR6GpuzEkk9aco+I6lnSdlnJPUEKPuMpJ6YZJ+h1EsJ7NOXemmWffpSr7qyT1/q1VD2GUi99sY+A6kX29hnIPU6GvsMpF7EYp++1CvSHCik3lDBCRJS76DgBAmpN0dwgoTUmxZQ8cKX+nwcKl74Uh9lwyoohNTnZbEKCiH1yVasgkJIfdiUEySkPhbKheBJvdGJC8GTeg8TF4In9d4iLnhP6r1W6FOkUu9nRZ8ilXpjKvoUqdTbRdGnyKTenMg+M6l3I7LPTOqNhuwzk3qXH/tMpd7WS4H7fiT1ugoHhlIvC6ISQnmwIegwlK0NQe1QqqvtOJ2x1IdO8L2QSHWtDqfSk3p/HQfGUk/KYxYiqW4hwixEUl3YhkmJpLpKDXMXyf4mg7FU92WhwViqm6zwqUSq64y4JnpS36TANdGT+s4Drome1LcTcE30pL5HAH1mUl1Agh4zqe4GQX+ZVNd2oLdMqhs10Fcg1cWWnPVQ6pOL+IuLWOrjTxyYSH1mhANTqbfQc2Am9RZkVpmQegMdB/pS713iwEDqbSPYIIRSXZqIQZFUdydh+51JdUsIN+2e1Lc2cPMTS31ii5ufWOpTV9z8xFKfkeJqnUh9xoZ9JlIfomGfidTHYdhnIvVJFM6nkPrYP6vHl/qYPVccX+pT8VxxfKkPseeDH3fs8fz4yaJzfPnk9NnVztni5Hqv5JWT0s5lPuDRn68vnutPUWnnry6ury/O7beni+PHi0v1LSjtnFxcXC+/5J6W/5PBg/8HUEsDBAoAAAAIAG+HFV0ukFLCwQ8AAOhkAAAYAAAAeGwvd29ya3NoZWV0cy9zaGVldDIueG1spd3bbiPJfcfxVyF4lRiI1OdDwRrDEo/Nc7N5aN8pM9SMEGk0kLi749tcxEkcIDBiJA5gIAgcA0HiODYSJEY28NOstHuXVwi62F3LKn5bw93Zm5n5sFT1Z/OnJruqmvvd772/vWl8url/uL57e9a0T6xmY/P25d2r67evz5qfbK/+KGp+78V334vP7u7/5OHNZrNtvL+9efsg3p8132y378Tp6cPLN5vby4eTu3ebt+9vb67u7m8vtw8nd/evTx/e3W8uX8kfu705dSwrOL29vH7bLDqU2pGNp/eNV5ury09uthd3N6vrV9s3Z83oJAr9ZuXp3We9zfXrN9uzpu2fFA+cFn28vLt5KP9s3F4X9Tcbt5fvz5p+s/HZrh/3JHD8ZuNh+8ObzVkzbDZefvKwvbstR7G/7mjXQVB2EKgOvF0hx3YQlh3Y37oEu6rBjve6+EZFOFbZRfEX1cU3KcKpjmTxl7IHRx74o3twqh72j8Q36kEdiMCNPNVJmYyaXizZy+nX2ZA5a11uL4t/3N991riXQz2cNaPqR3cplFwkLDyxfav4L/bdIPRcp2qnIigD/LLo6fu7rlw3rKov9Bz1ArWF2t7T7VnzQY746QvPLp7ap7snqBp3sIsuag+1j5qgDlCHqKOap+HQ0xhjFxPUKeqs0mhfU9Q5aob9Lvba7j8Nl57GErtYoa5Rc9Qf7HRnpzLLe5F25INOXaZd67kQVz+shxj1ArWF2kbtoHZRe6h91AR1gDpEHVWqRWJcabx78bf38shdvRjbfvE6XO3C8NVf/varv/n1l7/7xZf/+uPHf/qXx//+z8d//O3jz3/89JufPP7mrx//7XeUlcleHfvB8qjxFIueoaaoc9QMdYG6RF2hrlFz1B84z4Xb3YXYDk88eWYOAyd2Y893nwu1u/sl8hztZfv0RaPRaDz9/M+LPxpPf/fLLz7/2dOvfv/0Zz95/NtfS/vq7//h//73r55++u+PP/qfxz/9jy9/+c+l0mtyvjfK3i8Jagu1jdpB7aL2UPuoCeoAdYg6Qh2jTlCnqDPUFHWOmqEuUJeoK9Q1aq7rQWa9MrPRcxn1yj5c/dffx6hVjT0tapX6WtQqDfSOA+q4vdd4L4GoXdQeah81QR2gDmueRkhPY4RdjFEnqNNK9RNsTRERFZFiF3PUDHWBukRdoa5Rc10P8uqXeY1Porj4L7Aj37Wc8NlzrF/2aXwuijG/VeNYy2+pvqXl18dfDN/C/Pr0i9Hx6RejWw1nG+8KTz/6iy8+/9kXn//i6af/9fSr39M4vepn9fMsaoI6qNTVUl6pJ2vaXR5fvbhwwr2PF/jMR3s/uRd51Eml2vGY+hj5nXq6ppXqn6NRM9QF6hJ1hbpGzSuNOdvBt8l2UB4vLa7npQZaXC8qtbUQBxxivIZrBxjiAEO8U09v26tUa9tHTVAHleon4epAaKONUMeokwCjF2D0yhr080FaqXaA56gZ6gJ1ibpCXaPmldZ8DAi/TfTCMk7a8TqvVHt1LirVr8dCjh5ed7dDjF6I0auG037/eiGeGVET1EGIZ8YQo4c6Rp2EGL0Qo7dTeVmxF71KtX7nqBnqAnWJukJdo+aV+hy9qIyedWJ7R0cv+jo4e9GL8KMnaqvUUL/KQe2gdlF7qP1KtXoT1AHqEHWEOkadoE4r1Y7ODDVFnaNmqItKtZwvUVeoa9Rc14OMxbuMFZO99ZmKZR9O7OsnI5w9O68a62c51BZqu1J91qmmCJxp6WLHPdQ+aoJFDGqKwOu9IXY8Qh2jTrCIaU0ReG04w45T1DlqhkUsaorAK7sldrxCXaPmehEHMbatcprUObGKU2XkhZ7t2FbsPTv3b5W9am+G54r1Cx3mFnO7ZNfSPgd1eMgud9Jj7jMnPOSAhxxyJyPmMfOEh5zykDPuJGWeM2c85IKHXHInK+Y1c24MeZg++5izaNFK9mLrvzI4D3GuWusTk8wt5rZi7Z2to1h7C+oq1t5Besx95kSxPj2kWJ8o93GmYahaay/miHnMPFGsvZhTfvIzfjop85w54ye/4CGX3MmKec2cG0MeZtP5VmfG3XS+WyR//8xYsXYJdcHcYm4r1j9K8pBd7qTH3GdOeMgBDznkTkbMY+YJDznlIWfcSco8Z854yAUPueROVsxr5twY8jB95cpPcOLLq+fY8gLX8Yurz2fCV83MG+FDvmBuMbeZO8xd5h5znzlhHjAPmUfMY+YJ85R5xpwyz5kz5gXzknnFvGbODT4MX7mEE4QncbHqaPuOH4XFMvAz2Stn2WNLe58KcPr2fL/1fiSRW8xt5g5zl7nH3GdOmAfMQ+YR85h5wjxlnjGnzHPmjHnBvFRsnA+R18y5wYeRLFdpnOdDuJsOd/QKzxUb777ILeY2c4e5y9xj7jMnzAPmoWJ91Zp5rFifKA1wjn6yP+R+a5xWnXKBM+aUec6cMS+Yl8wr5jVzrtiryWZwVDbL+fLiWmf/EPJkUNnanCZw8JrnQvWtXa60mNvMHeYuc4+5z5wwD5iHzCPmsWJ9/rvmCAa8w0i1NrbV1XSC81YpdzJXBRqd4LxTtp+T/YAjLxXra/QBTietVGtjLx5yrjiqyX14VO7LyXonLmvDM8x51azYr7d/jq7YOEcjt5k7zF3mHnOfOWEeMA+ZR8xjxfreIsX6tLti4/ocW6eKjetzbJ0pNq7Pccil4nB/XV/m883l/eZVs3G/uZLtxFLuzb4uti+/mNnhd+b2B9f+V6p7fYGcOTf4MMXRUSmOjBTjO9951cxMccQpRm4zd5i7zD3mPnPCPGAeMo+Yx4qNFEec4ohTjK1TxUaKsXWm2EgxDrlUHB7mt0zsh6MacVSRc4MPoxofFdXYiGrNJ4yymWtM1sccVeQ2c4e5y9xj7jMnzAPmIfOIeazYiGrMUY05qtg6VWxEFVtnio2o4pBLxR8T1ZijipwbfLgr3zomqkUrLar44ey8amZEVbEeVeY2c4e5y9xj7jMnzAPmIfOIeaxYj6piPaqK9ahy61SxHlVunSnWo8pDLhV/RFRVH3pUmXODD6NqHxVV24gqb1WumplRtTmqyG3mDnOXucfcZ06YB8xD5hHzWLERVZujanNUsXWq2Igqts4UG1HFIZeKPyaqNkcVOTf4MKrOUVF1jKjiheZ51cyMqsNRRW4zd5i7zD3mPnPCPGAeMo+Yx4qNqDocVYejiq1TxUZUsXWm2IgqDrlU/DFRdTiqyLnBh1F1j4qqa0QV5y3Oq2ZmVF2OKnKbucPcZe4x95kT5gHzkHnEPFZsRNXlqLocVWydKjaiiq0zxUZUccil4o+JqstRRc4NPoyqd1RUPSOqvP2kamZG1eOoIreZO8xd5h5znzlhHjAPmUfMY8VGVD2OqsdRxdapYiOq2DpTbEQVh1wq/pioehxV5Nzgw6getQwm59T2o8q3JVXNzKj6HFXkNnOHucvcY+4zJ8wD5iHziHms2Iiqz1H1OarYOuXWc26dKTaiip3splE/Nqo+RxU5N/gwqketihWttKjavGGgamdmNeCsIreZO8xd5h5znzlhHjAPmUfMY8VGVgPOasBZxdYpt55z60yxkVXsZKn4A8sDst21zEvqBN/JnODDEQ44wsi5wYcRLhe4iveWZyIc8hphzeeDqrXx5RLlKkWxJWfvVsj5YvQHxTJJ7gR/+KEn36r6MJZ7mTvMXVWIfVDIhRN+sIie+nn9bhXmhHnAPGQeMY+ZJ8xT5hlzyjxnzpgXzEvmFfOaOVfs1kQ7OmbnddFKbhQzNonUfJ7gm6WYW8xtxdrnuU7J5i9ZiCHsqtb6bSzMfeZEsfG1KjWV4LL2kPseMY+ZJ1zJtKaSmvtZuO+Uec6ccSWLukr4phbue8W8Zs6NSg4DXq6VFW9JzwS8XMbwA+1sN9v/fpuaDyTVTxrnceQWc1ux9r7UKdm810Wxfq8Lc585Kdm814WHHHInI+Yx84SHnPKQM+4kZZ4zZzzkgodccicr5jVzbgx5+FU+1jGBLFrJROg331ds3H3P3GJuK9Y//pZs3tSiWL+phbnPnCjWb2rhIYfcyYh5zDzhIac85Iw7SZnnzBkPueAhl9zJinnNnBtDHqatXNSyy7vv4zCw/cguPiU8E75y+SHQPkucK9Y+KV4wt5jbivV77Us2b15RrF97MfeZE8XGVz7hkEPuZMQ8Zp7wkFMecsadpMxz5oyHXPCQS+5kxbxmzo0hD8NXLlPZ0Ukgv0/SjWwviMPiQ+kz6auWrfQ9xiHvtCpbmze1MLeY28wd5i5zj7nPnDAPmIfMI+Yx84R5yjxjTpnnzBnzgnnJvGJeM+cGV6E8Nb4I9XZz/3pzsbnZfUeq+tduyuH7rii+3eyUHvJE8Y1j9FDLE4Oah4aemNY8NPNE8c1UOJYvim83wbF8UXy/Ez3U9UXxNUtYhi+Kb/7AMnyR1zw0jUVxDzs9tIhFcWc5Fm9bQt7ETQ92bEskdQ8ObEvIG6OxGNsS8hZmLMe2hLzZGA9ZIIpvE8JDFojiq3/wp0JRfBEM/lQoim9twScfi+JbGPCpx6L4bgR84rGY1B5NT8ibY+jBczsQcvs7PTixAyG3teOrbgcirXtwbgdiUffg0g6E3BnO1dpC3jvNr70t5F3O/NrbQt54zK+9LeQtwvza20LezMsFOULeN8sFOULe4coFOULei8oFOULeNcoFOULe38kvWSjkvm5+yUIht3HzSxYKuWubX7JQyN3Y/JKFQm6D5oIiIbfockGRkDtyuaBIyA24XFAk5MZaLigScrMrFxQLuRGTC4qF3HfJBcVCbrPkgmIht09yQbGQWxqxIMcScrsdFuRYQu6uw4IcS8jNdFiQYwm5SQ4LciwhN65xQbaQm6q4IFvIPVRckC3klikuyBZyKxQXZAu5PYkLcoTcOsMFOULulOGCHCE3xnBBjpAbXrggR8hNKFyQK+QGCS7IFXI/BBfkCrn9gQtyhdzWwAW5Qm414II8IZfBuSBPyFVvLsgTcpGbC/KEXLzmgjwhF5TxxOiEQq5F0IMXTijk+gC++znFckTd+58TCTmFi+dbJxJyVhXPt04k5EQnnm+dSMi5RzzfOpGQ04F84H0hF3X5wPtCruHygfeFXLLlA+8LuRTLB94XcnmUCwqEXLnjggIhF+q4oEDIdTkuKBByvY0LCooVpJoD79pCXrfigXdtIa8w8cC7tpDXgpyEWMiLfk5CLORMJCchFnLOkJMQCzm7x0mIhZyHwzFdS8j5KD4IlpAzR3wQLCHnePggWELOxvCYtpDTELsLEv3a493l683o8v719duHxs3manvWtE7CZuN+d2Us/769eyf/5jcbf3y33d7dVv96s7l8tbkv/uU2G1d3d1v1j91I6n9a8uL/AVBLAwQKAAAACABvhxVdwCYB9rkAAAAoAQAACwAAAF9yZWxzLy5yZWxzjc9NbsIwEAXgq1izb8ZFUfhRnGzYsEVcwHXGSZTEY9mG0rN10SNxBbwsiAXLp3nzSe/2+1e312UWFwpxZKfgs5AgyBnuRtcrOCf7sYG2qY8065QbcRh9FPnFRQVDSn6HGM1Ai44Fe3L5YjksOuUYevTaTLonXElZYfhvwKMpTj+e3hHZ2tHQns15IZdewE8NECcdekoK8DrjN4fpi3kqsgri0Ck4lmu5LrtK26qzpZRbENjU+LC3uQNQSwMECgAAAAgAb4cVXfZ1OLgjAQAAkQMAABoAAAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc83TS07DMBAG4KtE3hPnMU5S1LQbNmxLL+Da4ySqH5HtQno2FhyJKyAKQgliwaZSN7P4R/r1eSS/v76tt5PRyTP6MDjbkjzNSIJWODnYriWnqO4ast2sd6h5HJwN/TCGZDLahpb0MY73lAbRo+EhdSPayWjlvOExpM53dOTiyDukRZZV1M87yLIz2Z9H/E+jU2oQ+ODEyaCNfxTTEM8aA0n23HcYW0In/Z2lk9EkeZQt2bFyJRmiUHkjATMkCb0aKPZocOm5RF8zn6mgAQV1wRiIHFZQXFMVeu5RPkU/2O73tearGa9m+aFiwHlRcOBSXZP34vwx9IhxSfuJPx+AGOfXKxtQqllxDvIAom5ugFfMeIeyrCoQDJQqIef1hUcXH2vzAVBLAwQKAAAACABvhxVdoTvPThsBAADcAwAAEwAAAFtDb250ZW50X1R5cGVzXS54bWy1k0FOwzAQRa8SeYtit10ghJJ2AWwBCS5gOZPEqj22PJOSno0FR+IKqC6qACFFVduNZzN+7//FfL5/VKvRu2IDiWzAWszlTBSAJjQWu1oM3JY3YrWsXrcRqBi9Q6pFzxxvlSLTg9ckQwQcvWtD8ppJhtSpqM1ad6AWs9m1MgEZkEveMcSyuodWD46Lh5EB99rRO1Hc7fd2qlroGJ01mm1AtcHmj6QMbWsNNMEMHpAlxQS6oR6AvZN5Sq8tXmWw+teZwNFx0u9WMoHLO9TbSAfF0wZSsg0Uzzrxo/ZQCzU6Rbx1QPLMDTN0Ss09eNi/85MDZMxk2V4naF44WezO3vkneyrIW0jr/JFUHqf3/x3mwD82yOLiQVS+1eUXUEsDBAoAAAAAAG9HFV0AAAAAAAAAAAAAAAADAAAAeGwvUEsBAhQACgAAAAgAb4cVXe9lA9jpAAAAtgEAAA8AAAAAAAAAAAAAAAAAAAAAAHhsL3dvcmtib29rLnhtbFBLAQIUAAoAAAAIAG9HFV0UJh4x8wwAADNsAQANAAAAAAAAAAAAAAAAABYBAAB4bC9zdHlsZXMueG1sUEsBAhQACgAAAAgAb4cVXXkvJnZkAwAA+Q8AABMAAAAAAAAAAAAAAAAANA4AAHhsL3RoZW1lL3RoZW1lMS54bWxQSwECFAAKAAAACABvhxVddubhd+EEAAC5NQAAFAAAAAAAAAAAAAAAAADJEQAAeGwvc2hhcmVkU3RyaW5ncy54bWxQSwECFAAKAAAACABvhxVd3DcsvGMQAAD9YAAAGAAAAAAAAAAAAAAAAADcFgAAeGwvd29ya3NoZWV0cy9zaGVldDEueG1sUEsBAhQACgAAAAgAb4cVXS6QUsLBDwAA6GQAABgAAAAAAAAAAAAAAAAAdScAAHhsL3dvcmtzaGVldHMvc2hlZXQyLnhtbFBLAQIUAAoAAAAIAG+HFV3AJgH2uQAAACgBAAALAAAAAAAAAAAAAAAAAGw3AABfcmVscy8ucmVsc1BLAQIUAAoAAAAIAG+HFV32dTi4IwEAAJEDAAAaAAAAAAAAAAAAAAAAAE44AAB4bC9fcmVscy93b3JrYm9vay54bWwucmVsc1BLAQIUAAoAAAAIAG+HFV2hO89OGwEAANwDAAATAAAAAAAAAAAAAAAAAKk5AABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQACgAAAAAAb0cVXQAAAAAAAAAAAAAAAAMAAAAAAAAAAAAQAAAA9ToAAHhsL1BLBQYAAAAACgAKAHoCAAAWOwAAAAA=';
+
+        function downloadPurchaseFormExcel() {
+            const form=state.purchaseForm;
+            if(!form) return showToast('請先產生單據','error');
+            if(typeof XLSX==='undefined') return showToast('Excel 元件尚未載入，請重新整理後再試','error');
+            const total=form.items.reduce((sum,item)=>sum+Number(item.total||Number(item.quantity)*Number(item.unitPrice)||0),0);
+            const wb=XLSX.read(PURCHASE_FORM_TEMPLATE_BASE64,{type:'base64',cellStyles:true,cellFormula:true});
+            const templateName=wb.SheetNames.includes('領款 (2)')?'領款 (2)':wb.SheetNames[wb.SheetNames.length-1];
+            const ws=wb.Sheets[templateName];
+            wb.SheetNames=['請購單'];
+            wb.Sheets={'請購單':ws};
+            wb.CalcPr={calcMode:'auto',fullCalcOnLoad:true,forceFullCalc:true};
+
+            const setValue=(ref,value,type='s')=>{if(!ws[ref])ws[ref]={t:type,v:value};else{ws[ref].t=type;ws[ref].v=value;delete ws[ref].f;}};
+            const setFormula=(ref,formula,value)=>{if(!ws[ref])ws[ref]={t:'n',f:formula,v:value};else{ws[ref].t='n';ws[ref].f=formula;ws[ref].v=value;}};
+            setValue('A3','    月     日付款憑單     號，支出傳票    號');
+            setValue('G5','應付代收款');
+            setValue('G6',form.workPlan||'');
+            setValue('G7',form.purposeCode||'');
+            setValue('Q5',form.purposeDescription||'');
+            setFormula('L5','C27',total);
+
+            for(let i=0;i<10;i++){
+                const row=17+i,item=form.items[i];
+                setValue(`A${row}`,i+1,'n');
+                setValue(`B${row}`,item?item.itemName:'');
+                setValue(`O${row}`,item?item.unit:'');
+                setValue(`Q${row}`,item?Number(item.quantity):'',item?'n':'s');
+                setValue(`S${row}`,item?Number(item.unitPrice):'',item?'n':'s');
+                setFormula(`V${row}`,`Q${row}*S${row}`,item?Number(item.total||Number(item.quantity)*Number(item.unitPrice)):0);
+            }
+            setFormula('C27','SUM(V17:V26)',total);
+            setValue('G27',amountToChinese(total));
+            setValue('A29',form.purposeDescription||'');
+            const type=form.transaction.paymentType||'prepaid';
+            const payer=form.transaction.payerName||state.currentUser?.name||'';
+            setValue('A32',`${type==='vendor'?'●':'○'}逕付具領人或廠商     ${type==='prepaid'?'●':'○'}款項已由 ${payer} 先行墊付     ${type==='advance'?'●':'○'}已預借費用`);
+            ws['!ref']='A1:Y32';
+            XLSX.writeFile(wb,`請購單_${form.transaction.id}.xlsx`,{bookType:'xlsx',cellStyles:true});
+            showToast('Excel 下載成功');
+        }
         async function deleteItem(id) {
             if(!confirm('確定刪除？此動作無法復原。')) return;
             const originalList = [...state.transactions];
+            const originalItems = [...state.transactionItems];
             state.transactions = state.transactions.filter(t=>String(t.id)!==String(id));
+            state.transactionItems = state.transactionItems.filter(item=>String(item.transactionId)!==String(id));
             updateUI();
             try {
                 showLoading(true);
@@ -948,6 +1215,7 @@
                 showToast('刪除成功');
             } catch(err) {
                 state.transactions = originalList;
+                state.transactionItems = originalItems;
                 updateUI();
                 showToast('刪除失敗：' + err.message, 'error');
             } finally {
@@ -1073,7 +1341,7 @@
             const tbody=document.getElementById('list-body'); 
             tbody.innerHTML=pageItems.map(t=>{ 
                 const projName=state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'(未知)'; 
-                const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
+                const safeDate = getSafeDate(t.date); // V36：使用安全日期轉換
                 const safeActionId = /^[A-Za-z0-9_-]{1,100}$/.test(String(t.id || '')) ? String(t.id) : '';
                 const canModify = !!safeActionId && (isAdmin || String(t.createdBy) === String(user.id));
                 
@@ -1090,6 +1358,9 @@
                 }
 
                 let actionBtns = '';
+                if (t.type === 'expense') {
+                    actionBtns += `<button onclick="showPurchaseFormPreview(state.transactions.find(t=>String(t.id)==='${safeActionId}'))" class="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="單據黏存單"><i data-lucide="file-text" class="w-4 h-4"></i></button>`;
+                }
 
                 if (canModify) {
                     actionBtns += `<button onclick="startEdit('${safeActionId}')" class="p-1.5 text-stone-400 hover:text-yellow-600 hover:bg-yellow-50 rounded transition-colors" title="修改"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
@@ -1132,7 +1403,7 @@
             if (!t) return showToast('找不到該筆資料', 'error');
 
             document.getElementById('inp-id').value=t.id;
-            document.getElementById('inp-date').value = getSafeDate(t.date); // V35：使用安全日期轉換
+            document.getElementById('inp-date').value = getSafeDate(t.date); // V36：使用安全日期轉換
             document.getElementById('inp-amount').value=t.amount;
             document.getElementById('inp-summary').value=t.summary;
             document.getElementById('inp-payee').value=t.payee;
@@ -1205,6 +1476,7 @@
             state.transactions = [];
             state.projects = [];
             state.categories = [];
+            state.transactionItems = [];
             localStorage.removeItem('tafalong_url');
             state.apiUrl = '';
             document.getElementById('login-id').value = '';
