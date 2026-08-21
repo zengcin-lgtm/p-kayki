@@ -8,6 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- 引入 html2pdf 用於產生 PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- 引入 xlsx-js-style，用於產生保留版面的 Excel -->
+    <script src="https://unpkg.com/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f5f5f4; /* Stone-100 暖色背景 */ }
@@ -75,6 +77,20 @@
             font-family: monospace;
             font-size: 1.1em;
         }
+
+        .expense-report-wrap { font-family: "DFKai-SB", "BiauKai", "KaiTi", "STKaiti", serif; color:#000; }
+        .expense-report-page { width: 190mm; min-height: 277mm; padding: 4mm 3mm; box-sizing: border-box; background:#fff; page-break-after: always; }
+        .expense-report-page:last-child { page-break-after: auto; }
+        .expense-report-title { text-align:center; font-size:20pt; font-weight:700; letter-spacing:.2em; margin:0 0 2mm; }
+        .expense-report-meta { display:flex; justify-content:space-between; font-size:12pt; margin-bottom:2mm; }
+        .expense-detail-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:10.5pt; line-height:1.15; }
+        .expense-detail-table th, .expense-detail-table td { border:1px solid #000; padding:1.2mm .8mm; vertical-align:middle; }
+        .expense-detail-table th { background:#fff; color:#000; font-weight:400; text-align:center; }
+        .expense-detail-table .report-section { font-size:12pt; letter-spacing:.45em; font-weight:700; }
+        .expense-detail-table .report-row td { height:7.1mm; }
+        .expense-detail-table .digit-cell { text-align:center; padding-left:0; padding-right:0; }
+        .expense-signatures { display:grid; grid-template-columns:repeat(4,1fr); margin-top:7mm; font-size:12pt; text-align:center; }
+        .expense-signatures div { min-height:20mm; }
     </style>
 </head>
 <body class="text-stone-800 pb-24 md:pb-10">
@@ -88,7 +104,7 @@
                 <div class="text-center mb-8">
                     <!-- 圖示改為紅色系 -->
                     <div class="bg-red-50 p-4 rounded-full inline-block mb-4 ring-4 ring-red-100"><i data-lucide="sun" class="w-10 h-10 text-red-600"></i></div>
-                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V34</span></h1>
+                    <h1 class="text-2xl font-bold text-stone-800 tracking-wider">太巴塱附幼<br><span class="text-red-600">記帳系統 V35</span></h1>
                 </div>
                 <form id="login-form" class="space-y-5">
                     <div><label class="text-xs font-bold text-stone-500 uppercase ml-1">帳號</label><input type="text" id="login-id" class="w-full p-3 border border-stone-300 rounded-lg outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-colors" placeholder="user"></div>
@@ -252,7 +268,7 @@
 
     <!-- Report Modal -->
     <div id="report-modal" class="fixed inset-0 bg-stone-900/80 z-[200] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden fade-in">
+        <div class="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl shadow-2xl fade-in">
              <div class="amis-strip" style="height: 6px;"></div>
              <div class="p-6">
                 <h3 class="text-xl font-bold text-stone-800 mb-4 border-b border-stone-200 pb-2 flex items-center"><i data-lucide="file-text" class="w-5 h-5 mr-2 text-red-600"></i> 產出財務報表</h3>
@@ -266,6 +282,7 @@
                             <option value="month">指定月份</option>
                             <option value="year">全年度 (1/1 - 12/31)</option>
                             <option value="academic">全學年 (8/1 - 次年7/31)</option>
+                            <option value="custom">自選期間</option>
                         </select>
                         
                         <div id="rpt-input-month-wrapper">
@@ -275,19 +292,29 @@
                             <input type="number" id="rpt-year-input" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none" placeholder="輸入西元年 (如 2024)">
                             <p id="rpt-year-hint" class="text-xs text-stone-500 mt-1 font-bold"></p>
                         </div>
+                        <div id="rpt-input-custom-wrapper" class="hidden grid grid-cols-2 gap-2">
+                            <input type="date" id="rpt-start-date" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none" title="開始日期">
+                            <input type="date" id="rpt-end-date" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none" title="結束日期">
+                        </div>
                     </div>
 
                     <div><label class="block text-sm font-bold text-stone-600 mb-2">報表類型</label>
                         <div class="space-y-2">
-                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="journal" checked class="mr-3 text-red-600 focus:ring-red-500">日記帳 (直式)</label>
-                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="ledger" class="mr-3 text-red-600 focus:ring-red-500">分類帳 (橫式)</label>
-                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="monthly" class="mr-3 text-red-600 focus:ring-red-500">收支月報表 (直式)</label>
+                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="journal" checked onchange="updateReportTypeInputs()" class="mr-3 text-red-600 focus:ring-red-500">日記帳 (直式)</label>
+                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="ledger" onchange="updateReportTypeInputs()" class="mr-3 text-red-600 focus:ring-red-500">分類帳 (橫式)</label>
+                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="monthly" onchange="updateReportTypeInputs()" class="mr-3 text-red-600 focus:ring-red-500">收支月報表 (直式)</label>
+                            <label class="flex items-center p-3 border-2 border-red-200 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"><input type="radio" name="rpt-type" value="expense-detail" onchange="updateReportTypeInputs()" class="mr-3 text-red-600 focus:ring-red-500">費用結報明細表（PDF＋Excel）</label>
                         </div>
+                    </div>
+                    <div id="expense-report-name-wrapper" class="hidden">
+                        <label class="block text-sm font-bold text-stone-600 mb-1">表內計畫名稱</label>
+                        <input type="text" id="rpt-custom-project-name" maxlength="150" placeholder="可自行輸入計畫或活動名稱" class="w-full p-2 border border-stone-300 rounded bg-white focus:border-red-500 outline-none">
+                        <p class="text-xs text-stone-500 mt-1">留白時自動使用上方所選計畫名稱；核定總額固定加總全部 Projects 預算。</p>
                     </div>
                 </div>
                 <div class="mt-6 flex space-x-3">
                     <button onclick="document.getElementById('report-modal').classList.add('hidden')" class="w-1/2 bg-stone-200 text-stone-700 font-bold py-3 rounded-xl hover:bg-stone-300">取消</button>
-                    <button onclick="generateReport()" class="w-1/2 bg-red-700 text-white font-bold py-3 rounded-xl shadow-md hover:bg-red-800">下載 PDF</button>
+                    <button onclick="generateReport()" class="w-1/2 bg-red-700 text-white font-bold py-3 rounded-xl shadow-md hover:bg-red-800">預覽報表</button>
                 </div>
             </div>
         </div>
@@ -305,6 +332,7 @@
             </div>
             <div class="mt-4 flex justify-end space-x-4">
                 <button onclick="document.getElementById('print-modal').classList.add('hidden')" class="px-6 py-2 border border-stone-300 rounded-lg font-bold text-stone-600 hover:bg-stone-100">關閉</button>
+                <button id="btn-download-excel" onclick="downloadExpenseReportExcel()" class="hidden px-6 py-2 bg-green-700 text-white rounded-lg font-bold flex items-center shadow-lg active:scale-95 transition-transform hover:bg-green-800"><i data-lucide="file-spreadsheet" class="w-5 h-5 mr-2"></i> 儲存 Excel</button>
                 <button onclick="downloadCurrentPDF()" class="px-6 py-2 bg-red-700 text-white rounded-lg font-bold flex items-center shadow-lg active:scale-95 transition-transform hover:bg-red-800"><i data-lucide="download" class="w-5 h-5 mr-2"></i> 儲存 PDF</button>
             </div>
         </div>
@@ -322,7 +350,7 @@
     </div>
 
     <script>
-        // V34: 後端驗證、篩選、超支提示與安全輸出版
+        // V35：新增費用結報明細表 PDF／Excel 匯出
         let state = { 
             apiUrl: '', 
             token: '',
@@ -352,7 +380,7 @@
             else { document.getElementById('login-overlay').classList.add('hidden'); switchTab('settings'); }
         };
 
-        // V34：日期安全轉換函式（避免時區造成日期偏移）
+        // V35：日期安全轉換函式（避免時區造成日期偏移）
         function getSafeDate(val) {
             if(!val) return '';
             const d = new Date(val);
@@ -443,7 +471,9 @@
             
             const opt = {
                 margin:       [5, 5, 5, 5],
-                filename:     `tafalong_report_${new Date().toISOString().slice(0,10)}.pdf`,
+                filename:     state.currentReportType === 'expense-detail'
+                    ? `費用結報明細表_${new Date().toISOString().slice(0,10)}.pdf`
+                    : `tafalong_report_${new Date().toISOString().slice(0,10)}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: isLandscape ? 'landscape' : 'portrait' }
@@ -465,15 +495,22 @@
             const mode = document.getElementById('rpt-mode').value;
             const mWrap = document.getElementById('rpt-input-month-wrapper');
             const yWrap = document.getElementById('rpt-input-year-wrapper');
+            const cWrap = document.getElementById('rpt-input-custom-wrapper');
             const yHint = document.getElementById('rpt-year-hint');
             const yInput = document.getElementById('rpt-year-input');
             
             if (mode === 'month') {
                 mWrap.classList.remove('hidden');
                 yWrap.classList.add('hidden');
+                cWrap.classList.add('hidden');
+            } else if (mode === 'custom') {
+                mWrap.classList.add('hidden');
+                yWrap.classList.add('hidden');
+                cWrap.classList.remove('hidden');
             } else {
                 mWrap.classList.add('hidden');
                 yWrap.classList.remove('hidden');
+                cWrap.classList.add('hidden');
                 
                 const currentYear = new Date().getFullYear();
                 if(!yInput.value) yInput.value = currentYear;
@@ -496,6 +533,11 @@
             }
         }
 
+        function updateReportTypeInputs() {
+            const type = document.querySelector('input[name="rpt-type"]:checked')?.value;
+            document.getElementById('expense-report-name-wrapper').classList.toggle('hidden', type !== 'expense-detail');
+        }
+
         function openReportModal() {
             const sel = document.getElementById('rpt-project');
             sel.innerHTML = '<option value="ALL">全部計畫 (All Projects)</option>' + state.projects.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
@@ -504,8 +546,15 @@
             document.getElementById('rpt-mode').value = 'month';
             document.getElementById('rpt-month-input').value = new Date().toISOString().slice(0, 7);
             document.getElementById('rpt-year-input').value = new Date().getFullYear();
+            const today = new Date();
+            const localToday = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+            document.getElementById('rpt-start-date').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-01`;
+            document.getElementById('rpt-end-date').value = localToday;
+            document.querySelector('input[name="rpt-type"][value="journal"]').checked = true;
+            document.getElementById('rpt-custom-project-name').value = '';
             
             updateReportInputs();
+            updateReportTypeInputs();
             document.getElementById('report-modal').classList.remove('hidden');
         }
 
@@ -523,9 +572,9 @@
                 const mVal = document.getElementById('rpt-month-input').value;
                 if(!mVal) return showToast('請選擇月份', 'error');
                 periodText = mVal;
-                // 用字串前綴篩選最快
                 startDate = mVal + "-01"; 
-                // 結束日期不重要，因為我們用 startsWith(YYYY-MM)
+                const [monthYear, monthNumber] = mVal.split('-').map(Number);
+                endDate = `${mVal}-${String(new Date(monthYear, monthNumber, 0).getDate()).padStart(2,'0')}`;
             } else if (mode === 'year') {
                 const yVal = document.getElementById('rpt-year-input').value;
                 if(!yVal) return showToast('請輸入年份', 'error');
@@ -539,10 +588,16 @@
                 endDate = `${yVal + 1}-07-31`;
                 const minguo = yVal - 1911;
                 periodText = `${minguo}學年度 (${yVal}/08 - ${yVal+1}/07)`;
+            } else if (mode === 'custom') {
+                startDate = document.getElementById('rpt-start-date').value;
+                endDate = document.getElementById('rpt-end-date').value;
+                if (!startDate || !endDate) return showToast('請選擇開始與結束日期', 'error');
+                if (startDate > endDate) return showToast('開始日期不可晚於結束日期', 'error');
+                periodText = `${startDate} 至 ${endDate}`;
             }
 
             let filtered = state.transactions.filter(t => {
-                const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
                 const matchProject = (projId === 'ALL') || (String(t.projectId) === String(projId));
                 
                 if (!matchProject) return false;
@@ -557,13 +612,13 @@
             filtered.sort((a,b) => new Date(a.date) - new Date(b.date));
 
             const projName = projId === 'ALL' ? '全部計畫' : (state.projects.find(p=>String(p.id)===String(projId))?.name || projId);
-            const rptName = type==='journal'?'日記帳':type==='ledger'?'分類帳':'收支月報表';
+            const rptName = type==='journal'?'日記帳':type==='ledger'?'分類帳':type==='expense-detail'?'費用結報明細表':'收支月報表';
             
             // 計算預算資訊 (Budget Calculation)
             let totalBudget = 0;
             // Removed global calculation
             
-            if (projId === 'ALL') {
+            if (type === 'expense-detail' || projId === 'ALL') {
                 totalBudget = state.projects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
             } else {
                 const p = state.projects.find(x => String(x.id) === String(projId));
@@ -581,6 +636,21 @@
             const isLandscape = type === 'ledger';
             contentDiv.className = isLandscape ? 'landscape-content bg-white p-4 pdf-content mx-auto' : 'bg-white p-4 pdf-content mx-auto';
             contentDiv.style.width = isLandscape ? '287mm' : '200mm'; 
+
+            if (type === 'expense-detail') {
+                const expenseRows = filtered.filter(t => t.type === 'expense');
+                const customName = document.getElementById('rpt-custom-project-name').value.trim();
+                const reportProjectName = customName || projName;
+                if (!reportProjectName) return showToast('請輸入計畫名稱', 'error');
+                if (expenseRows.some(t => Number(t.amount) > 999999999)) return showToast('單筆金額超過表格九位數上限', 'error');
+                const expenseTotal = expenseRows.reduce((sum,t)=>sum+(Number(t.amount)||0),0);
+                if (expenseTotal > 999999999) return showToast('支出合計超過表格九位數上限', 'error');
+                generateExpenseDetailReport(expenseRows, reportProjectName, totalBudget, startDate, endDate, periodText);
+                return;
+            }
+
+            state.currentReportType = type;
+            document.getElementById('btn-download-excel').classList.add('hidden');
 
             let html = `<div class="text-center mb-4"><h1 class="text-2xl font-bold border-b-2 border-black inline-block pb-1">花蓮縣太巴塱國民小學附設幼兒園</h1><h2 class="text-xl font-bold mt-2">${escapeHtml(rptName)}</h2><p class="text-sm mt-1">範圍：${escapeHtml(projName)} | 期間：${escapeHtml(periodText)}</p></div>`;
 
@@ -601,7 +671,7 @@
                 filtered.forEach(t => {
                     const isInc = t.type === 'income'; const amt = Number(t.amount); if(isInc)sIn+=amt; else sOut+=amt;
                     const pName = state.projects.find(p=>String(p.id)===String(t.projectId))?.name || '';
-                    const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                    const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
                     html += `<tr><td>${escapeHtml(safeDate)}</td><td>${escapeHtml(pName)}</td><td>${escapeHtml(t.category)}</td><td>${escapeHtml(t.summary)}</td><td class="amount-col">${isInc?amt.toLocaleString():''}</td><td class="amount-col">${!isInc?amt.toLocaleString():''}</td></tr>`;
                 });
                 html += `<tr style="font-weight:bold;background:#fafaf9"><td colspan="4" class="text-right">合計：</td><td class="amount-col">${sIn.toLocaleString()}</td><td class="amount-col">${sOut.toLocaleString()}</td></tr></tbody></table><div class="text-right font-bold mt-2">期間結餘：$${(sIn-sOut).toLocaleString()}</div>`;
@@ -610,7 +680,7 @@
                 for(const cat in groups) {
                     const txs = groups[cat]; const total = txs.reduce((a,c)=>a+Number(c.amount),0);
                     html += `<h3 class="font-bold mt-6 mb-2 border-l-4 border-stone-500 pl-2 bg-stone-100 p-1">${escapeHtml(cat)}</h3><table class="preview-table"><thead><tr><th>日期</th><th>摘要</th><th>計畫</th><th class="text-right">金額</th></tr></thead><tbody>`;
-                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                    txs.forEach(t => { const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
                         html += `<tr><td>${escapeHtml(safeDate)}</td><td>${escapeHtml(t.summary)}</td><td>${escapeHtml(state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'')}</td><td class="amount-col">${Number(t.amount).toLocaleString()}</td></tr>`; });
                     html += `<tr style="font-weight:bold"><td colspan="3" class="text-right">小計：</td><td class="amount-col">$${total.toLocaleString()}</td></tr></tbody></table>`;
                 }
@@ -638,6 +708,161 @@
             contentDiv.innerHTML = html;
             document.getElementById('report-modal').classList.add('hidden');
             document.getElementById('print-modal').classList.remove('hidden');
+        }
+
+        function formatRocDate(isoDate) {
+            if (!isoDate) return '';
+            const [y,m,d] = isoDate.split('-').map(Number);
+            return `${y-1911}年${m}月${d}日`;
+        }
+
+        function getAmountDigits(amount) {
+            const value = Math.max(0, Math.round(Number(amount) || 0));
+            const digits = String(value).padStart(9, '0').slice(-9).split('');
+            const firstNonZero = digits.findIndex(d => d !== '0');
+            return digits.map((d, index) => firstNonZero === -1 ? (index === 8 ? '0' : '') : (index < firstNonZero ? '' : d));
+        }
+
+        function buildExpensePageHtml(rows, pageIndex, pageCount, report) {
+            const rowsPerPage = 19;
+            const paddedRows = rows.concat(Array.from({length: rowsPerPage - rows.length}, () => null));
+            const isLastPage = pageIndex === pageCount - 1;
+            const pageSubtotal = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+            const totalForRow = isLastPage ? report.totalAmount : pageSubtotal;
+            const totalLabel = isLastPage ? '合計' : '本頁小計';
+            const digitHeaders = ['億','仟','佰','拾','萬','仟','佰','拾','元'];
+
+            return `<section class="expense-report-page">
+                <h1 class="expense-report-title">費用結報明細表</h1>
+                <div class="expense-report-meta"><span>期間：${escapeHtml(formatRocDate(report.startDate))} 至 ${escapeHtml(formatRocDate(report.endDate))}</span><span>第 ${pageIndex+1} 頁／共 ${pageCount} 頁</span></div>
+                <table class="expense-detail-table">
+                    <colgroup><col style="width:14%"><col style="width:11%"><col style="width:29%">${digitHeaders.map(()=>'<col style="width:5.11%">').join('')}</colgroup>
+                    <tbody>
+                        <tr><th colspan="2">計 畫 名 稱</th><td colspan="3">${escapeHtml(report.projectName)}</td><th colspan="3">全部計畫或活動經費<br>核定總額</th><td colspan="4" class="digit-cell">${report.totalBudget.toLocaleString()}元</td></tr>
+                        <tr><th colspan="12" class="report-section">支　用　內　容</th></tr>
+                        <tr><th rowspan="2">憑證<br>號碼</th><th rowspan="2">用途別</th><th rowspan="2">摘　要</th><th colspan="9">金　　　　　　　　　額</th></tr>
+                        <tr>${digitHeaders.map(h=>`<th>${h}</th>`).join('')}</tr>
+                        ${paddedRows.map((row, idx) => {
+                            if (!row) return `<tr class="report-row"><td></td><td></td><td></td>${digitHeaders.map(()=>'<td class="digit-cell"></td>').join('')}</tr>`;
+                            const digits = getAmountDigits(row.amount);
+                            const number = String(pageIndex * rowsPerPage + idx + 1).padStart(4,'0');
+                            return `<tr class="report-row"><td class="digit-cell">${number}</td><td>${escapeHtml(row.category)}</td><td>${escapeHtml(row.summary)}</td>${digits.map(d=>`<td class="digit-cell">${d}</td>`).join('')}</tr>`;
+                        }).join('')}
+                        <tr><td></td><td></td><th>${totalLabel}</th>${getAmountDigits(totalForRow).map(d=>`<td class="digit-cell">${d}</td>`).join('')}</tr>
+                    </tbody>
+                </table>
+                <div class="expense-signatures"><div>承辦人</div><div>主辦出納</div><div>主辦會計</div><div>負責人</div></div>
+            </section>`;
+        }
+
+        function generateExpenseDetailReport(rows, projectName, totalBudget, startDate, endDate, periodText) {
+            const rowsPerPage = 19;
+            const pageCount = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+            const report = {
+                rows: rows.map((row, index) => ({...row, voucherNo:String(index+1).padStart(4,'0')})),
+                projectName,
+                totalBudget,
+                startDate,
+                endDate,
+                periodText,
+                totalAmount: rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0)
+            };
+            state.expenseReport = report;
+            state.currentReportType = 'expense-detail';
+
+            const pages = [];
+            for (let pageIndex=0; pageIndex<pageCount; pageIndex++) {
+                pages.push(buildExpensePageHtml(report.rows.slice(pageIndex*rowsPerPage, (pageIndex+1)*rowsPerPage), pageIndex, pageCount, report));
+            }
+
+            const contentDiv = document.getElementById('print-content');
+            contentDiv.className = 'expense-report-wrap bg-white mx-auto';
+            contentDiv.style.width = '196mm';
+            contentDiv.innerHTML = pages.join('');
+            document.getElementById('btn-download-excel').classList.remove('hidden');
+            document.getElementById('report-modal').classList.add('hidden');
+            document.getElementById('print-modal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function downloadExpenseReportExcel() {
+            const report = state.expenseReport;
+            if (!report) return showToast('請先產生費用結報明細表', 'error');
+            if (typeof XLSX === 'undefined') return showToast('Excel 元件尚未載入，請重新整理後再試', 'error');
+
+            const wb = XLSX.utils.book_new();
+            const rowsPerPage = 19;
+            const pageCount = Math.max(1, Math.ceil(report.rows.length / rowsPerPage));
+            const digitHeaders = ['億','仟','佰','拾','萬','仟','佰','拾','元'];
+            const border = {style:'thin', color:{rgb:'000000'}};
+            const baseFont = {name:'DFKai-SB', sz:11, color:{rgb:'000000'}};
+            const center = {horizontal:'center', vertical:'center', wrapText:true};
+            const allBorder = {top:border,bottom:border,left:border,right:border};
+
+            for (let pageIndex=0; pageIndex<pageCount; pageIndex++) {
+                const pageRows = report.rows.slice(pageIndex*rowsPerPage, (pageIndex+1)*rowsPerPage);
+                const data = Array.from({length:29}, () => Array(14).fill(''));
+                data[0][0] = '費用結報明細表';
+                data[1][0] = `期間：${formatRocDate(report.startDate)} 至 ${formatRocDate(report.endDate)}`;
+                data[1][11] = `第 ${pageIndex+1} 頁／共 ${pageCount} 頁`;
+                data[2][0] = '計 畫\n名 稱'; data[2][2] = report.projectName;
+                data[2][5] = '全部計畫或活動經費核定總額'; data[2][8] = report.totalBudget;
+                data[3][0] = '支　用　內　容';
+                data[4][0] = '憑證\n號碼'; data[4][1] = '用途別'; data[4][3] = '摘　要'; data[4][4] = '金　　　　　　　　額';
+                digitHeaders.forEach((header, i) => data[5][4+i] = header);
+
+                pageRows.forEach((row, rowIndex) => {
+                    const target = 6 + rowIndex;
+                    data[target][0] = String(pageIndex*rowsPerPage + rowIndex + 1).padStart(4,'0');
+                    data[target][1] = row.category;
+                    data[target][3] = row.summary;
+                    getAmountDigits(row.amount).forEach((digit, i) => data[target][4+i] = digit);
+                    data[target][13] = Number(row.amount) || 0;
+                });
+
+                const isLast = pageIndex === pageCount-1;
+                const pageSubtotal = pageRows.reduce((sum,row)=>sum+(Number(row.amount)||0),0);
+                const totalValue = isLast ? report.totalAmount : pageSubtotal;
+                data[25][3] = isLast ? '合計' : '本頁小計';
+                getAmountDigits(totalValue).forEach((digit, i) => data[25][4+i] = digit);
+                data[25][13] = totalValue;
+                data[27][0] = '承辦人'; data[27][3] = '主辦出納'; data[27][6] = '主辦會計'; data[27][9] = '負責人';
+
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!merges'] = [
+                    {s:{r:0,c:0},e:{r:0,c:12}}, {s:{r:1,c:0},e:{r:1,c:10}}, {s:{r:1,c:11},e:{r:1,c:12}},
+                    {s:{r:2,c:0},e:{r:2,c:1}}, {s:{r:2,c:2},e:{r:2,c:4}}, {s:{r:2,c:5},e:{r:2,c:7}}, {s:{r:2,c:8},e:{r:2,c:12}},
+                    {s:{r:3,c:0},e:{r:3,c:12}}, {s:{r:4,c:0},e:{r:5,c:0}}, {s:{r:4,c:1},e:{r:5,c:2}},
+                    {s:{r:4,c:3},e:{r:5,c:3}}, {s:{r:4,c:4},e:{r:4,c:12}},
+                    ...Array.from({length:19},(_,i)=>({s:{r:6+i,c:1},e:{r:6+i,c:2}})),
+                    {s:{r:27,c:0},e:{r:27,c:2}}, {s:{r:27,c:3},e:{r:27,c:5}}, {s:{r:27,c:6},e:{r:27,c:8}}, {s:{r:27,c:9},e:{r:27,c:12}}
+                ];
+                ws['!cols'] = [{wch:11},{wch:5},{wch:5},{wch:28},...Array.from({length:9},()=>({wch:3.2})),{hidden:true}];
+                ws['!rows'] = [{hpt:28},{hpt:20},{hpt:38},{hpt:24},{hpt:22},{hpt:20},...Array.from({length:19},()=>({hpt:23})),{hpt:24},{hpt:8},{hpt:24},{hpt:52}];
+                ws['!margins'] = {left:0.3,right:0.3,top:0.35,bottom:0.35,header:0,footer:0};
+                ws['!pageSetup'] = {paperSize:9, orientation:'portrait', fitToWidth:1, fitToHeight:1};
+
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let r=0; r<=range.e.r; r++) for (let c=0; c<=12; c++) {
+                    const ref = XLSX.utils.encode_cell({r,c});
+                    if (!ws[ref]) ws[ref] = {t:'s',v:''};
+                    ws[ref].s = {font:{...baseFont}, alignment:{vertical:'center', wrapText:true}};
+                }
+                ws['A1'].s = {font:{name:'DFKai-SB',sz:20,bold:true},alignment:center};
+                ['A2','L2'].forEach(ref=>ws[ref].s={font:{...baseFont,sz:12},alignment:center});
+                for (let r=2; r<=25; r++) for (let c=0; c<=12; c++) {
+                    const ref=XLSX.utils.encode_cell({r,c});
+                    ws[ref].s={font:{...baseFont},alignment:{...center,horizontal:c===3&&r>=6&&r<=24?'left':'center'},border:allBorder};
+                }
+                ws['A4'].s={font:{...baseFont,sz:13,bold:true},alignment:center,border:allBorder};
+                ['A28','D28','G28','J28'].forEach(ref=>ws[ref].s={font:{...baseFont,sz:12},alignment:center});
+                ws['I3'].t='n'; ws['I3'].z='#,##0"元"';
+                XLSX.utils.book_append_sheet(wb, ws, `第${pageIndex+1}頁`);
+            }
+
+            const safeName = report.projectName.replace(/[\\/:*?"<>|]/g,'_').slice(0,40) || '費用結報明細表';
+            XLSX.writeFile(wb, `${safeName}_費用結報明細表.xlsx`);
+            showToast('Excel 下載成功');
         }
 
         // --- Data Operations ---
@@ -848,7 +1073,7 @@
             const tbody=document.getElementById('list-body'); 
             tbody.innerHTML=pageItems.map(t=>{ 
                 const projName=state.projects.find(p=>String(p.id)===String(t.projectId))?.name||'(未知)'; 
-                const safeDate = getSafeDate(t.date); // V34：使用安全日期轉換
+                const safeDate = getSafeDate(t.date); // V35：使用安全日期轉換
                 const safeActionId = /^[A-Za-z0-9_-]{1,100}$/.test(String(t.id || '')) ? String(t.id) : '';
                 const canModify = !!safeActionId && (isAdmin || String(t.createdBy) === String(user.id));
                 
@@ -907,7 +1132,7 @@
             if (!t) return showToast('找不到該筆資料', 'error');
 
             document.getElementById('inp-id').value=t.id;
-            document.getElementById('inp-date').value = getSafeDate(t.date); // V34：使用安全日期轉換
+            document.getElementById('inp-date').value = getSafeDate(t.date); // V35：使用安全日期轉換
             document.getElementById('inp-amount').value=t.amount;
             document.getElementById('inp-summary').value=t.summary;
             document.getElementById('inp-payee').value=t.payee;
